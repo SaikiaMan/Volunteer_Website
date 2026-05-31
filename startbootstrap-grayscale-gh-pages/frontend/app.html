@@ -371,7 +371,7 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 <div class="toast" id="toast">  <div class="toast-dot" id="toast-dot"></div>  <span id="toast-msg"></span></div>
 <script>
 // Ensure API base is available on this page
-const API_BASE_URL = window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || 'http://localhost:3001/api';
+const API_BASE_URL = window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
 function switchShellTab(tabName, triggerEl) {
   const shellPanels = document.querySelectorAll('.shell-panel');
   shellPanels.forEach(panel => panel.classList.remove('active'));
@@ -617,8 +617,44 @@ function showToast(msg, color = 'var(--green)') { const t = document.getElementB
 const cur = document.getElementById('cursor');
 document.addEventListener('mousemove', e => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; });
 document.querySelectorAll('button, a, .stat-block, .event-row, .activity-row, .breakdown-row, .exp-display-row, .skill-pill, .earn-block, .sum-item').forEach(el => { el.addEventListener('mouseenter', () => cur.classList.add('big')); el.addEventListener('mouseleave', () => cur.classList.remove('big')); });
-switchShellTab('events', document.querySelector('.app-shell-tab[data-shell-tab="events"]'));
-init();
+// Role guard: if user is a Head, send them to the Head dashboard
+// If the user is a Head, render the Head dashboard inside this page
+(function renderRoleBasedDashboard() {
+  try {
+    const storedRole = (localStorage.getItem('stafflyRole') || '').toString().toLowerCase();
+    const raw = localStorage.getItem('volunteerProfile');
+    let profileRole = '';
+    if (raw) {
+      try { profileRole = (JSON.parse(raw).role || '').toString().toLowerCase(); } catch (e) {}
+    }
+
+    if (storedRole === 'head' || profileRole === 'head') {
+      // Show Head UI: change tab label and inject full Head dashboard from head-dashboard.html
+      const tabBtn = document.querySelector('.app-shell-tab[data-shell-tab="dashboard"]');
+      if (tabBtn) tabBtn.textContent = 'Head Dashboard';
+
+      const shellDash = document.getElementById('shell-dashboard');
+      if (shellDash) {
+        // Load the original head-dashboard page unchanged inside an iframe so it preserves its own scripts and styles
+        shellDash.innerHTML = `<iframe src="head-dashboard.html" id="headDashboardIframe" style="width:100%;height:calc(100vh - 140px);min-height:600px;border:0;background:transparent;"></iframe>`;
+      }
+      
+      // Ensure topbar reflects logged-in state
+      try { updateTopbarAuthButtons(); } catch (e) { /* ignore */ }
+
+      // Ensure Events tab is selected by default while Head UI loads
+      switchShellTab('events', document.querySelector('.app-shell-tab[data-shell-tab="events"]'));
+    } else {
+      // Volunteer default behavior
+      switchShellTab('events', document.querySelector('.app-shell-tab[data-shell-tab="events"]'));
+      init();
+    }
+  } catch (e) {
+    console.warn('Role-based dashboard rendering failed', e);
+    switchShellTab('events', document.querySelector('.app-shell-tab[data-shell-tab="events"]'));
+    init();
+  }
+})();
 
 // Override client-side saveProfile to persist changes to backend storage and DB
 window.saveProfile = async function() {

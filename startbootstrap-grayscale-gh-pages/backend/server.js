@@ -34,9 +34,15 @@ const allowedOrigins = Array.from(new Set([
     ...envAllowedOrigins
 ]));
 
+function isAllowedOrigin(origin) {
+    if (!origin) return true;
+    if (allowedOrigins.includes(origin)) return true;
+    return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+}
+
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (isAllowedOrigin(origin)) {
             return callback(null, true);
         }
 

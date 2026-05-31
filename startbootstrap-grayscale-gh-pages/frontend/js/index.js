@@ -3,7 +3,7 @@ function normalizeApiBaseUrl(value) {
     const trimmedValue = String(value || '').trim();
 
     if (!trimmedValue) {
-        return 'http://localhost:3001/api';
+        return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
     }
 
     if (/^https?:\/\//i.test(trimmedValue)) {
@@ -16,7 +16,7 @@ function normalizeApiBaseUrl(value) {
 const API_BASE_URL = normalizeApiBaseUrl(
     window.API_BASE_URL ||
     document.documentElement.dataset.apiBaseUrl ||
-    'http://localhost:3001/api'
+    'https://volunteerwebsite-production-8fcc.up.railway.app/api'
 );
 
 function getStoredRole() {
@@ -96,6 +96,43 @@ function openLoginForm() {
     }
 }
 
+// Show a single logout button across pages when user is logged in
+function showLogoutIfLogged() {
+    try {
+        const logged = !!localStorage.getItem('volunteerProfile') || !!localStorage.getItem('stafflyRole');
+        if (!logged) return;
+
+        // Only show a site-wide logout on the app shell (app.html). Don't alter the landing page.
+        const path = (window.location.pathname || '').toLowerCase();
+        const isAppShell = path.endsWith('/app.html') || path.endsWith('app.html');
+        if (!isAppShell) return;
+
+        const hideIds = ['signupTopBtn','loginTopBtn','signupBtn','loginBtn','navSignupBtn','navLoginBtn'];
+        hideIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+
+        // Prefer existing signout button ids
+        let logoutBtn = document.getElementById('signoutTopBtn') || document.getElementById('navLogoutBtn') || document.getElementById('globalLogoutBtn');
+        if (!logoutBtn) {
+            // Insert a simple logout button into the top nav if available
+            const topbar = document.querySelector('#mainNav .container') || document.querySelector('.topbar-right') || document.body;
+            if (topbar) {
+                const btn = document.createElement('button');
+                btn.id = 'globalLogoutBtn';
+                btn.className = 'topbar-btn';
+                btn.type = 'button';
+                btn.textContent = 'Sign Out';
+                btn.onclick = function() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('stafflyRole'); window.location.href = 'index.html'; };
+                topbar.appendChild(btn);
+                logoutBtn = btn;
+            }
+        }
+
+        if (logoutBtn) logoutBtn.style.display = 'inline-block';
+    } catch (e) {
+        console.warn('showLogoutIfLogged error', e);
+    }
+}
+
 function closeLoginForm() {
     console.log('Closing login form');
     const modal = document.getElementById('loginModal');
@@ -145,6 +182,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if user already has a profile
     if (localStorage.getItem('volunteerProfile')) {
         updateSignupButton();
+        // show single logout button
+        showLogoutIfLogged();
     }
 
     if (authAction === 'login') {
@@ -260,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     const storedProfile = normalizeVolunteerProfile(restoreResult.user || restoreResult.data || {}, document.getElementById('email').value);
                                     localStorage.setItem('volunteerProfile', JSON.stringify(storedProfile));
                                     updateSignupButton();
+                                    showLogoutIfLogged();
                                     // Redirect to app now that profile exists
                                     setTimeout(() => { window.location.href = 'app.html'; }, 900);
                                     return false;
@@ -331,6 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update button to Profile
                 updateSignupButton();
+                showLogoutIfLogged();
                 
                 form.reset();
                 
@@ -425,16 +466,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Store the profile data in localStorage
                 const profile = normalizeVolunteerProfile(result.user || result.data || {}, email);
                 localStorage.setItem('volunteerProfile', JSON.stringify(profile));
+                try { showLogoutIfLogged(); } catch (e) { /* ignore */ }
 
                 // If backend marks this profile as Head, redirect to head dashboard
                 if ((profile.role || '').toString().toLowerCase() === 'head') {
                     setStoredRole('head');
                     if (loginSuccessMessage) {
                         loginSuccessMessage.classList.remove('d-none');
-                        loginSuccessMessage.textContent = 'Head login detected! Redirecting to Head Dashboard...';
+                        loginSuccessMessage.textContent = 'Head login detected! Redirecting to Dashboard...';
                     }
+                    // Redirect to the app page; the app will render the Head dashboard in-place
                     setTimeout(() => {
-                        window.location.href = 'head-dashboard.html';
+                        window.location.href = 'app.html';
                     }, 900);
                     return;
                 }

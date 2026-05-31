@@ -968,6 +968,53 @@ section {
     padding: 1.5rem;
 }
 
+/* Match auth modal visuals closer to app shell (dark panels, green accents, pill buttons) */
+.volunteer-modal .modal-content-volunteer {
+    background: linear-gradient(180deg,#0b0f10,#0f1419);
+    border: 1px solid rgba(29,255,143,0.06);
+}
+.volunteer-modal .modal-header-volunteer {
+    background: transparent;
+    color: #e9ffee;
+    padding: 1rem 1.25rem;
+}
+.volunteer-modal .modal-header-volunteer h2 {
+    color: #e9ffee;
+    font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    font-weight:700;
+}
+.volunteer-modal .form-control {
+    background: #0e1416;
+    border: 1px solid rgba(255,255,255,0.04);
+    padding: 0.9rem 1rem;
+    border-radius: 0.75rem;
+    font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+.volunteer-modal .form-actions .btn-primary {
+    background: linear-gradient(180deg,#23c77a,#17b56a);
+    color: #04210a;
+    border: none;
+    padding: 0.85rem 1rem;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(13,95,55,0.08);
+    font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+}
+.volunteer-modal .form-actions .btn-primary:hover { transform: translateY(-2px); }
+.volunteer-modal .form-actions .btn-secondary {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #e6f6ef;
+    border-radius: 10px;
+}
+.volunteer-modal .modal-content-volunteer {
+    font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+.volunteer-modal .form-text {
+    color: rgba(230,246,239,0.78) !important;
+}
+
 .form-group {
     margin-bottom: 1rem;
 }

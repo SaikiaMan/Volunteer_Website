@@ -234,6 +234,25 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
 }
 .requirements-note { font-size: 12px; color: var(--muted2); line-height: 1.5; }
 .requirements-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.requirements-actions .btn-confirm {
+  background: var(--green);
+  color: var(--black);
+  border: none;
+  border-radius: 20px;
+  padding: 10px 18px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .18s;
+}
+.requirements-actions .btn-confirm:hover {
+  box-shadow: 0 0 18px var(--green-glow);
+  transform: translateY(-1px);
+}
+.requirements-actions .modal-close {
+  padding: 10px 14px;
+}
 
 .assignment-footer {
   margin-top: 24px;
@@ -750,6 +769,51 @@ let SUPERVISOR_TARGET = DEFAULT_REQUIREMENTS.supervisors;
 let ORGANISER_TARGET = DEFAULT_REQUIREMENTS.organisers;
 const HEAD_DASHBOARD_STORAGE_KEY = 'stafflyHeadDashboardState';
 
+function getLoggedInHeadProfile() {
+  try {
+    const raw = localStorage.getItem('volunteerProfile');
+    if (!raw) return {};
+    const profile = JSON.parse(raw);
+    if (!profile || typeof profile !== 'object') return {};
+    const role = String(profile.role || localStorage.getItem('stafflyRole') || '').toLowerCase();
+    if (role && role !== 'head') return {};
+    return profile;
+  } catch (error) {
+    return {};
+  }
+}
+
+function getHeadDisplayName() {
+  const profile = getLoggedInHeadProfile();
+  return profile.fullName
+    || profile.full_name
+    || profile.name
+    || [profile.firstName, profile.lastName, profile.first_name, profile.last_name].filter(Boolean).join(' ').trim()
+    || profile.email
+    || 'Head';
+}
+
+function updateHeadIdentity() {
+  const profile = getLoggedInHeadProfile();
+  const fullName = getHeadDisplayName();
+  const initials = (fullName || 'H')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(part => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'H';
+
+  const nameEl = document.querySelector('.footer-name');
+  if (nameEl) nameEl.textContent = fullName;
+
+  const avatarEl = document.querySelector('.avatar-sm');
+  if (avatarEl) avatarEl.textContent = initials;
+
+  const roleGuard = document.getElementById('roleGuard');
+  if (roleGuard) roleGuard.classList.add('hidden');
+}
+
 function syncRequirementTargets() {
   ACCEPT_TARGET = Math.max(1, Number(eventRequirements.targetVolunteers) || DEFAULT_REQUIREMENTS.targetVolunteers);
   SUPERVISOR_TARGET = Math.max(0, Number(eventRequirements.supervisors) || DEFAULT_REQUIREMENTS.supervisors);
@@ -895,6 +959,7 @@ function loadState() {
 }
 
 function init() {
+  updateHeadIdentity();
   if (!loadState()) {
     apps = genApps(240);
     syncRequirementTargets();

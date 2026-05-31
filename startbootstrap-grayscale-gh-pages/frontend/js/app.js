@@ -4,7 +4,7 @@ function normalizeApiBaseUrl(value) {
     const trimmedValue = String(value || '').trim();
 
     if (!trimmedValue) {
-        return 'http://localhost:3001/api';
+        return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
     }
 
     if (/^https?:\/\//i.test(trimmedValue)) {
@@ -17,7 +17,7 @@ function normalizeApiBaseUrl(value) {
 const API_BASE_URL = normalizeApiBaseUrl(
     window.API_BASE_URL ||
     document.documentElement.dataset.apiBaseUrl ||
-    'http://localhost:3001/api'
+    'https://volunteerwebsite-production-8fcc.up.railway.app/api'
 );
 
 function getStoredRole() {
@@ -39,10 +39,7 @@ async function trackPageView(page) {
 // Initialize app on page load
 document.addEventListener('DOMContentLoaded', function() {
     const currentRole = getStoredRole();
-    if (currentRole === 'head') {
-        window.location.href = 'head-dashboard.html';
-        return;
-    }
+    // If the stored role is 'head', do not redirect away — the app shell will render the Head dashboard in-place.
     
     // Check if user is logged in
     const userProfile = localStorage.getItem('volunteerProfile');
