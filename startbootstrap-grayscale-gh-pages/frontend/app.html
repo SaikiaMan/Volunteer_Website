@@ -307,7 +307,15 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
   .topbar { padding: 0 12px; backdrop-filter: none; }
   .summary-strip { display:flex; gap:8px; overflow-x:auto; }
   .summary-strip .sum-item { min-width:160px; flex:0 0 auto; }
-  .app-shell-bar { backdrop-filter: none; }
+  .app-shell-bar { backdrop-filter: none; flex-wrap:wrap; align-items:center; }
+  /* Move the shell tabs closer to the right controls on small screens */
+  .app-shell-tabs { order:2; margin-left:8px; }
+  /* Ensure the right-side controls (signup/login/signout/back) appear inline and after tabs */
+  .topbar-right { order:3; display:flex; gap:8px; align-items:center; }
+  /* Show topbar signout on mobile so Sign out and Back are both at top */
+  #signoutTopBtn { display:inline-block !important; }
+  /* Make the Back to Home compact into an arrow on mobile (text swapped by JS) */
+  .app-shell-logout.mobile-arrow { font-size:18px; padding:6px 8px; width:36px; text-align:center; }
 }
 </style>
 </head>
@@ -792,6 +800,42 @@ window.saveProfile = async function() {
     showToast('Error saving profile. Please try again.', 'var(--red)');
   }
 };
+// Mobile app-shell layout adjustments: compact back button and move tabs near right-side controls
+function applyAppShellMobileLayout() {
+  try {
+    const isMobile = window.matchMedia('(max-width:820px)').matches;
+    const tabs = document.querySelector('.app-shell-tabs');
+    const logoutBtn = document.querySelector('.app-shell-logout');
+    const signoutTopBtn = document.getElementById('signoutTopBtn');
+    if (isMobile) {
+      if (tabs) tabs.style.marginLeft = '8px';
+      if (signoutTopBtn) signoutTopBtn.style.display = 'inline-block';
+      if (logoutBtn && !logoutBtn.dataset.origText) {
+        logoutBtn.dataset.origText = logoutBtn.textContent || '';
+        logoutBtn.textContent = '←';
+        logoutBtn.setAttribute('title', 'Back to Home');
+        logoutBtn.classList.add('mobile-arrow');
+      }
+      // Also ensure the events/chat tabs are visible and inline with the arrow
+      if (tabs) tabs.style.display = 'flex';
+    } else {
+      if (tabs) tabs.style.marginLeft = '';
+      if (signoutTopBtn) signoutTopBtn.style.display = '';
+      if (logoutBtn && logoutBtn.dataset.origText) {
+        logoutBtn.textContent = logoutBtn.dataset.origText || 'Back to Home';
+        delete logoutBtn.dataset.origText;
+        logoutBtn.removeAttribute('title');
+        logoutBtn.classList.remove('mobile-arrow');
+      }
+    }
+  } catch (e) {
+    console.warn('applyAppShellMobileLayout error', e);
+  }
+}
+
+window.addEventListener('load', applyAppShellMobileLayout);
+let __appShellMobileLayoutTimeout = null;
+window.addEventListener('resize', function() { clearTimeout(__appShellMobileLayoutTimeout); __appShellMobileLayoutTimeout = setTimeout(applyAppShellMobileLayout, 120); });
 </script>
 </body>
 </html>
