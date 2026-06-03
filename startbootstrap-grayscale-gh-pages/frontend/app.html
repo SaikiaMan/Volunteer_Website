@@ -41,10 +41,13 @@ html { scroll-behavior:smooth; }
 body { background:var(--black); color:var(--white); font-family:var(--sans); overflow-x:hidden; min-height:100vh; cursor:auto; }
 #cursor { display:none !important; }
 .app { display:flex; min-height:100vh; }
-.sidebar { width:var(--sidebar-w); flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:50; transition:transform .3s ease; }
-.sidebar-logo { padding:22px 24px 20px; border-bottom:1px solid var(--border); font-family:var(--serif); font-size:20px; color:var(--white); text-decoration:none; display:block; letter-spacing:-.3px; }
+.sidebar { width:var(--sidebar-w); flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:100; transition:transform .3s ease; }
+.sidebar-logo { padding:22px 24px 20px; font-family:var(--serif); font-size:20px; color:var(--white); text-decoration:none; display:block; letter-spacing:-.3px; }
+.sidebar-logo-row { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); flex-shrink: 0; }
+.sidebar-close { display:none; background:none; border:none; color:var(--muted3); font-size:24px; padding:0 20px; cursor:none; }
+@media(max-width:900px) { .sidebar-close { display:block; } }
 .sidebar-logo em { font-style:italic; color:var(--green); }
-.sidebar-profile { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; }
+.sidebar-profile { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-shrink: 0; }
 .sidebar-av { width:36px; height:36px; border-radius:50%; background:var(--surface3); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:var(--white); flex-shrink:0; letter-spacing:.5px; }
 .sidebar-av-name { font-size:13px; font-weight:500; color:var(--white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sidebar-av-role { font-size:11px; color:var(--muted2); display:flex; align-items:center; gap:4px; margin-top:2px; }
@@ -60,10 +63,10 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 .nav-badge { margin-left:auto; background:var(--green); color:var(--black); font-size:10px; font-weight:600; padding:1px 7px; border-radius:20px; min-width:20px; text-align:center; }
 .nav-badge.amber { background:var(--amber); color:var(--black); }
 .nav-badge.muted { background:var(--surface3); color:var(--muted3); }
-.sidebar-footer { padding:16px 20px; border-top:1px solid var(--border); }
+.sidebar-footer { padding:16px 20px; border-top:1px solid var(--border); flex-shrink: 0; }
 .sidebar-footer-btn { width:100%; background:none; border:1px solid var(--border); color:var(--muted3); font-family:var(--sans); font-size:12px; padding:8px; border-radius:var(--radius); cursor:none; transition:all .18s; }
 .sidebar-footer-btn:hover { border-color:var(--border2); color:var(--white); }
-.main { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-height:100vh; }
+.main { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-height:100vh; min-width: 0; }
 .topbar { height:var(--header-h); background:rgba(8,8,8,.85); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 32px; position:sticky; top:0; z-index:40; }
 .topbar-left { display:flex; align-items:center; gap:16px; }
 .topbar-right { display:flex; align-items:center; gap:12px; }
@@ -260,15 +263,33 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 .toast { position:fixed; bottom:28px; right:28px; z-index:500; background:var(--surface2); border:1px solid var(--border2); border-radius:var(--radius); padding:12px 18px; font-size:13px; display:flex; align-items:center; gap:10px; box-shadow:0 8px 32px rgba(0,0,0,.5); transform:translateY(80px); opacity:0; transition:all .3s cubic-bezier(.22,1,.36,1); pointer-events:none; }
 .toast.show { transform:translateY(0); opacity:1; }
 .toast-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.sidebar-overlay { display:none; position:fixed; inset:0; z-index:49; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .2s; }
+.sidebar-overlay { display:none; position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .2s; }
 .sidebar-overlay.show { opacity:1; pointer-events:auto; }
 @media(max-width:1100px){ .overview-grid { grid-template-columns:260px 1fr; } }
-@media(max-width:900px){ .sidebar { transform:translateX(-100%); } .sidebar.open { transform:translateX(0); box-shadow:8px 0 40px rgba(0,0,0,.6); } .sidebar-overlay { display:block; } .main { margin-left:0; } .mob-toggle { display:block; } .overview-grid { grid-template-columns:1fr; } .profile-card { position:static; } .summary-strip { grid-template-columns:repeat(2,1fr); } .earn-summary { grid-template-columns:1fr 1fr; } .content { padding:20px 16px; } .topbar { padding:0 16px; } .edit-grid,.form-2col { grid-template-columns:1fr; }}
-@media(max-width:500px){ .summary-strip,.earn-summary { grid-template-columns:1fr; } }
+@media(max-width:900px){
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.open { transform:translateX(0); box-shadow:8px 0 40px rgba(0,0,0,.6); }
+  .sidebar-overlay { display:block; }
+  .main { margin-left:0; min-width: 0; }
+  .mob-toggle { display:block; }
+  .shell-panel { padding: 16px 10px 40px; }
+  .content { padding: 16px 10px; }
+  .overview-grid { grid-template-columns:1fr; gap: 16px; }
+  .profile-card { position:static; width: 100%; margin-bottom: 0; }
+  .overview-right { gap: 16px; }
+  .summary-strip { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .summary-strip .sum-item { min-width: 160px; flex: 0 0 auto; }
+  .earn-summary { display: flex; gap: 8px; overflow-x: auto; }
+  .earn-summary .earn-block { min-width: 160px; flex: 0 0 auto; }
+  .edit-grid,.form-2col { grid-template-columns:1fr; }
+  .topbar { padding:0 16px; }
+}
 .app-shell { min-height:100vh; background:linear-gradient(180deg,#0e0e0e 0%,#080808 100%); color:var(--white); }
 .app-shell-events .app { display:none; }
 .app-shell-dashboard .app { display:flex; }
 .app-shell-bar { position:sticky; top:0; z-index:80; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 24px; background:rgba(8,8,8,.92); backdrop-filter:blur(18px); border-bottom:1px solid var(--border); }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.topbar-main, .topbar-alt { display:flex; align-items:center; gap:8px; }
 .app-shell-brand { font-family:var(--serif); font-size:22px; color:var(--white); text-decoration:none; letter-spacing:-.3px; }
 .app-shell-brand em { font-style:italic; color:var(--green); }
 .app-shell-tabs { display:flex; gap:8px; flex-wrap:wrap; }
@@ -300,20 +321,24 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 <style>
 /* Mobile performance tweaks */
 @media (max-width: 820px) {
-  :root { --sidebar-w: 0px; }
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); }
   .main { margin-left: 0; }
   .topbar { padding: 0 12px; backdrop-filter: none; }
-  .summary-strip { display:flex; gap:8px; overflow-x:auto; }
-  .summary-strip .sum-item { min-width:160px; flex:0 0 auto; }
+  .topbar-left { gap: 8px; }
+  .breadcrumb { font-size: 11px; }
+  .breadcrumb span:nth-child(1), .breadcrumb span:nth-child(2) { display: none; } /* Hide Staffly and slash */
   .app-shell-bar { backdrop-filter: none; flex-wrap:wrap; align-items:center; }
-  /* Move the shell tabs closer to the right controls on small screens */
-  .app-shell-tabs { order:2; margin-left:8px; }
-  /* Ensure the right-side controls (signup/login/signout/back) appear inline and after tabs */
-  .topbar-right { order:3; display:flex; gap:8px; align-items:center; }
-  /* Show topbar signout on mobile so Sign out and Back are both at top */
-  #signoutTopBtn { display:inline-block !important; }
+  .app-shell-bar::-webkit-scrollbar { display:none; }
+  .app-shell-tabs { order:2; margin-left:8px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; }
+  .app-shell-tab { flex-shrink:0; }
+  /* Stack the right-side groups (main vs alt) on mobile */
+  .topbar-right { order:3; width:100%; display:flex; flex-direction:column; align-items:flex-end; gap:8px; margin-top:8px; border-top:1px solid var(--border); padding-top:10px; }
+  .topbar-main, .topbar-alt { display:flex; gap:6px; align-items:center; }
+  .topbar-right .topbar-btn { padding: 6px 10px; font-size: 11px; }
+  @media (max-width: 600px) {
+    .topbar-main .topbar-btn:not(.primary) { display: none; }
+  }
   /* Make the Back to Home compact into an arrow on mobile (text swapped by JS) */
   .app-shell-logout.mobile-arrow { font-size:18px; padding:6px 8px; width:36px; text-align:center; }
 }
@@ -329,10 +354,14 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
       <button class="app-shell-tab" data-shell-tab="chat" onclick="switchShellTab('chat', this)">Chat</button>
     </div>
     <div class="topbar-right">
-      <button id="signupTopBtn" class="topbar-btn primary" type="button" onclick="window.location.href='index.html?auth=signup'">Sign Up</button>
-      <button id="loginTopBtn" class="topbar-btn" type="button" onclick="window.location.href='index.html?auth=login'">Login</button>
-      <button id="signoutTopBtn" class="topbar-btn" style="display:none;" type="button" onclick="logout()">Sign Out</button>
-      <button class="app-shell-logout" type="button" onclick="window.location.href='index.html'">Back to Home</button>
+      <div class="topbar-main">
+        <button id="signupTopBtn" class="topbar-btn primary" type="button" onclick="window.location.href='index.html?auth=signup'">Sign Up</button>
+        <button id="loginTopBtn" class="topbar-btn" type="button" onclick="window.location.href='index.html?auth=login'">Login</button>
+      </div>
+      <div class="topbar-alt">
+        <button id="signoutTopBtn" class="topbar-btn" style="display:none;" type="button" onclick="logout()">Sign Out</button>
+        <button class="app-shell-logout" type="button" onclick="window.location.href='index.html'">Back to Home</button>
+      </div>
     </div>
   </div>
 
@@ -362,12 +391,18 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 
 <div id="cursor"></div><div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 <div class="app">
-  <aside class="sidebar" id="sidebar">    <a href="#" class="sidebar-logo">Staff<em>ly</em></a>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo-row">
+      <a href="#" class="sidebar-logo">Staff<em>ly</em></a>
+      <button class="sidebar-close" onclick="closeSidebar()">&times;</button>
+    </div>
     <div class="sidebar-profile">      <div class="sidebar-av" id="sb-initials">AK</div>      <div>        <div class="sidebar-av-name" id="sb-name">Amandeep Kaur</div>        <div class="sidebar-av-role"><span class="role-dot"></span> <span id="sb-role">Amandeep Kaur</span></div>      </div>    </div>
     <nav class="sidebar-nav">      <span class="nav-group-label">Dashboard</span>      <button class="nav-item active" data-tab="overview" onclick="switchTab('overview',this)">        <span class="nav-dot"></span> Overview      </button>      <button class="nav-item" data-tab="events" onclick="switchTab('events',this)">        <span class="nav-dot"></span> My Events        <span class="nav-badge" id="nb-events">0</span>      </button>      <button class="nav-item" data-tab="earnings" onclick="switchTab('earnings',this)">        <span class="nav-dot"></span> Earnings      </button>      <span class="nav-group-label">Account</span>      <button class="nav-item" data-tab="edit" onclick="switchTab('edit',this)">        <span class="nav-dot"></span> Edit Profile      </button>      <button class="nav-item">        <span class="nav-dot"></span> Notifications        <span class="nav-badge amber">0</span>      </button>      <button class="nav-item">        <span class="nav-dot"></span> Settings      </button>    </nav>
     <div class="sidebar-footer">      <button class="sidebar-footer-btn" onclick="logout()">Sign out</button>    </div>  </aside>
   <div class="main">
-    <header class="topbar">      <div class="topbar-left">        <button class="mob-toggle" onclick="openSidebar()">Menu</button>        <div class="breadcrumb">Staffly <span>/</span> <span id="breadcrumb-label">Overview</span></div>      </div>      <div class="topbar-right">        <button class="topbar-btn" onclick="switchTab('events',null)">Browse Events</button>        <button class="topbar-btn primary" onclick="switchTab('edit',null)">Edit Profile</button>      </div>    </header>
+    <header class="topbar">      <div class="topbar-left">        <button class="mob-toggle" onclick="openSidebar()">Menu</button>        <div class="breadcrumb"><span>Staffly</span> <span>/</span> <span id="breadcrumb-label">Overview</span></div>      </div>      <div class="topbar-right">
+        <button class="topbar-btn primary" onclick="switchTab('edit',null)">Edit Profile</button>
+      </div>    </header>
     <div class="content">
       <div class="tabs" role="tablist">        <button class="tab active" data-tab="overview" onclick="switchTab('overview',this)" role="tab">Overview</button>        <button class="tab" data-tab="events" onclick="switchTab('events',this)" role="tab">My Events <span class="tab-count" id="tc-events">0</span></button>        <button class="tab" data-tab="earnings" onclick="switchTab('earnings',this)" role="tab">Earnings</button>        <button class="tab" data-tab="edit" onclick="switchTab('edit',this)" role="tab">Edit Profile</button>      </div>
       <div id="panel-overview" class="panel active">
@@ -501,6 +536,8 @@ function updateTopbarAuthButtons() {
     const signupBtn = document.getElementById('signupTopBtn');
     const loginBtn = document.getElementById('loginTopBtn');
     const signoutBtn = document.getElementById('signoutTopBtn');
+    const mainCont = document.querySelector('.topbar-main');
+    const altCont = document.querySelector('.topbar-alt');
     const profile = getStoredProfile();
     const signedIn = profile && Object.keys(profile).length > 0;
     if (signupBtn && loginBtn && signoutBtn) {
@@ -508,10 +545,14 @@ function updateTopbarAuthButtons() {
         signupBtn.style.display = 'none';
         loginBtn.style.display = 'none';
         signoutBtn.style.display = 'inline-block';
+        if (mainCont) mainCont.style.display = 'none';
+        if (altCont) altCont.style.display = 'flex';
       } else {
         signupBtn.style.display = 'inline-block';
         loginBtn.style.display = 'inline-block';
         signoutBtn.style.display = 'none';
+        if (mainCont) mainCont.style.display = 'flex';
+        if (altCont) altCont.style.display = 'flex';
       }
     }
   } catch (e) {
@@ -809,7 +850,6 @@ function applyAppShellMobileLayout() {
     const signoutTopBtn = document.getElementById('signoutTopBtn');
     if (isMobile) {
       if (tabs) tabs.style.marginLeft = '8px';
-      if (signoutTopBtn) signoutTopBtn.style.display = 'inline-block';
       if (logoutBtn && !logoutBtn.dataset.origText) {
         logoutBtn.dataset.origText = logoutBtn.textContent || '';
         logoutBtn.textContent = '←';
@@ -820,7 +860,6 @@ function applyAppShellMobileLayout() {
       if (tabs) tabs.style.display = 'flex';
     } else {
       if (tabs) tabs.style.marginLeft = '';
-      if (signoutTopBtn) signoutTopBtn.style.display = '';
       if (logoutBtn && logoutBtn.dataset.origText) {
         logoutBtn.textContent = logoutBtn.dataset.origText || 'Back to Home';
         delete logoutBtn.dataset.origText;
