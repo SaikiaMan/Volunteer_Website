@@ -480,6 +480,28 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
 }
 .hidden { display: none !important; }
 </style>
+<style>
+/* Mobile / small-screen tweaks to improve responsiveness and reduce rendering cost */
+@media (max-width: 820px) {
+  :root { --sidebar-w: 0px; }
+  .sidebar { transform: translateX(-100%); position: fixed; z-index: 60; }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .topbar { padding: 0 12px; }
+  .summary-strip { display: flex; gap: 8px; overflow-x: auto; grid-template-columns: none; }
+  .summary-strip .sum-item { min-width: 160px; flex: 0 0 auto; }
+  .tabs { padding: 0 8px; }
+  .content { padding: 18px 12px; }
+  .modal { width: 94%; }
+  .topbar-btn { padding: 8px 10px; font-size: 12px; }
+  .modal { box-shadow: none; }
+  .topbar { backdrop-filter: none; }
+}
+
+/* Overlay for sidebar on mobile */
+.sidebar-overlay { display: none; }
+.sidebar-overlay.show { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.36); z-index: 55; }
+</style>
 </head>
 <body>
 
@@ -769,6 +791,12 @@ let SUPERVISOR_TARGET = DEFAULT_REQUIREMENTS.supervisors;
 let ORGANISER_TARGET = DEFAULT_REQUIREMENTS.organisers;
 const HEAD_DASHBOARD_STORAGE_KEY = 'stafflyHeadDashboardState';
 
+// Mobile render limits and debounce timers
+const APPS_RENDER_LIMIT = 30; // number of app cards to render on small screens initially
+let mobileShowAll = false;
+let filterTimer = null;
+let modalFilterTimer = null;
+
 function getLoggedInHeadProfile() {
   try {
     const raw = localStorage.getItem('volunteerProfile');
@@ -1029,8 +1057,25 @@ function renderApps() {
     (sf === 'all' || v.status === sf)
   );
   const el = document.getElementById('app-list');
-  el.innerHTML = list.length ? list.map(v => appCardHTML(v)).join('') :
-    `<div class="empty">No applications found.</div>`;
+  if (!el) return;
+
+  // Mobile: render a limited number of cards initially to avoid jank
+  const isMobile = window.innerWidth < 768;
+  const max = (isMobile && !mobileShowAll) ? APPS_RENDER_LIMIT : list.length;
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty">No applications found.</div>`;
+    return;
+  }
+
+  const html = list.slice(0, max).map(v => appCardHTML(v)).join('');
+  const moreHtml = list.length > max ? `<div style="margin-top:8px"><button class="topbar-btn" onclick="showMoreApps()">Show ${list.length - max} more</button></div>` : '';
+  el.innerHTML = html + moreHtml;
+}
+
+function showMoreApps() {
+  mobileShowAll = true;
+  renderApps();
 }
 
 function renderAccepted() {
@@ -1366,18 +1411,21 @@ function toggleModalItem(id, mode) {
 }
 
 function filterModal() {
-  const q = document.getElementById('modal-search').value.toLowerCase();
-  const mode = modalMode;
-  const other = mode === 'supervisor' ? organisers : supervisors;
-  const otherIds = new Set(other.map(v=>v.id));
-  const currentIds = new Set((mode === 'supervisor' ? supervisors : organisers).map(v=>v.id));
-  let avail;
-  if (modalSource === 'pending') {
-    avail = apps.filter(v => v.status === 'pending' && !otherIds.has(v.id) && v.name.toLowerCase().includes(q));
-  } else {
-    avail = accepted.filter(v => !otherIds.has(v.id) && v.name.toLowerCase().includes(q));
-  }
-  renderModalList(avail, currentIds, mode);
+  clearTimeout(modalFilterTimer);
+  modalFilterTimer = setTimeout(() => {
+    const q = document.getElementById('modal-search').value.toLowerCase();
+    const mode = modalMode;
+    const other = mode === 'supervisor' ? organisers : supervisors;
+    const otherIds = new Set(other.map(v=>v.id));
+    const currentIds = new Set((mode === 'supervisor' ? supervisors : organisers).map(v=>v.id));
+    let avail;
+    if (modalSource === 'pending') {
+      avail = apps.filter(v => v.status === 'pending' && !otherIds.has(v.id) && v.name.toLowerCase().includes(q));
+    } else {
+      avail = accepted.filter(v => !otherIds.has(v.id) && v.name.toLowerCase().includes(q));
+    }
+    renderModalList(avail, currentIds, mode);
+  }, 160);
 }
 
 function confirmAssign() {
@@ -1442,9 +1490,18 @@ function maybeCloseModal(e) {
 }
 
 // ── FILTERS ──
-function filterCards() { renderApps(); }
-function filterAccepted() { renderAccepted(); }
-function filterWaitlist() { renderWaitlist(); }
+function filterCards() {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => { mobileShowAll = false; renderApps(); }, 180);
+}
+function filterAccepted() {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => renderAccepted(), 180);
+}
+function filterWaitlist() {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => renderWaitlist(), 180);
+}
 
 // ── SIDEBAR ──
 function openSidebar() {

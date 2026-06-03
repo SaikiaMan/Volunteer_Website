@@ -179,11 +179,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     trackPageView('landing');
     
-    // Check if user already has a profile
-    if (localStorage.getItem('volunteerProfile')) {
-        updateSignupButton();
-        // show single logout button
-        showLogoutIfLogged();
+    // Check if user already has a profile. If so, redirect directly to events page (app.html).
+    if (localStorage.getItem('volunteerProfile') || localStorage.getItem('stafflyRole')) {
+        window.location.href = 'app.html';
+        return;
     }
 
     if (authAction === 'login') {

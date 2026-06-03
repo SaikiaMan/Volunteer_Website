@@ -297,6 +297,19 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 .shell-coming p { color:var(--muted2); font-size:14px; line-height:1.7; }
 @media(max-width:900px){ .app-shell-bar { flex-wrap:wrap; } .shell-grid { grid-template-columns:1fr; } .shell-title { font-size:34px; } }
 </style>
+<style>
+/* Mobile performance tweaks */
+@media (max-width: 820px) {
+  :root { --sidebar-w: 0px; }
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .topbar { padding: 0 12px; backdrop-filter: none; }
+  .summary-strip { display:flex; gap:8px; overflow-x:auto; }
+  .summary-strip .sum-item { min-width:160px; flex:0 0 auto; }
+  .app-shell-bar { backdrop-filter: none; }
+}
+</style>
 </head>
 <body class="app-shell-events">
 <div class="app-shell">

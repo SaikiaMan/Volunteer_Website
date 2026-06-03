@@ -1,6 +1,45 @@
 <!DOCTYPE html>
 <html lang="en" data-api-base-url="https://volunteerwebsite-production-8fcc.up.railway.app/api">
     <head>
+        <script>
+            (async function() {
+                const profileStr = localStorage.getItem('volunteerProfile');
+                if (profileStr) {
+                    try {
+                        const profile = JSON.parse(profileStr);
+                        if (profile && profile.email) {
+                            // Hide the page to prevent flashing while we check the database
+                            document.documentElement.style.display = 'none';
+                            
+                            const apiBase = 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
+                            const response = await fetch(`${apiBase}/volunteers/check-email`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email: profile.email })
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.profileExists || data.authExists) {
+                                    // Email found in database, redirect to app!
+                                    window.location.replace('app.html');
+                                    return;
+                                }
+                            }
+                            
+                            // Email not valid or not found, clear old session and show page
+                            localStorage.removeItem('volunteerProfile');
+                            localStorage.removeItem('stafflyRole');
+                            document.documentElement.style.display = '';
+                        }
+                    } catch (e) {
+                        document.documentElement.style.display = '';
+                    }
+                } else if (localStorage.getItem('stafflyRole')) {
+                     window.location.replace('app.html');
+                }
+            })();
+        </script>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="description" content="Staffly helps volunteers discover verified event opportunities, apply fast, and build real experience." />
