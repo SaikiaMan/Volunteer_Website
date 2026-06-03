@@ -126,7 +126,7 @@ app.html (Application)
 **Responsive Design**
 - Mobile-first approach
 - Breakpoints for tablet and desktop
-- Touch-friendly interface
+- Touch-friendly interface   
 - Flexible layouts
 
 **Tab System**
