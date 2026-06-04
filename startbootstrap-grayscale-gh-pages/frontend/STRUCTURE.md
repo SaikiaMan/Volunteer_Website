@@ -1,4 +1,4 @@
-# Staffly Event Hub - UI/UX Restructuring Documentation
+# EventEase Event Hub - UI/UX Restructuring Documentation
 
 ## Overview
 The website has been restructured to provide a better user experience with a clear separation between the landing page and the main application interface.
@@ -264,7 +264,7 @@ cd frontend
 
 ## Summary
 
-The Staffly Event Hub has been successfully restructured with:
+The EventEase Event Hub has been successfully restructured with:
 - Clear landing page with compelling CTAs
 - Organized app interface with tabbed navigation
 - Improved responsive design for all devices

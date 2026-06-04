@@ -3,7 +3,7 @@
     <head>
         <script>
             // Synchronous check for immediate redirection to prevent flashing
-            if (localStorage.getItem('volunteerProfile') || localStorage.getItem('stafflyRole')) {
+            if (localStorage.getItem('volunteerProfile') || localStorage.getItem('eventeaseRole')) {
                 window.location.replace('app.html');
             }
         </script>
@@ -44,23 +44,23 @@
                             
                             // Email not valid or not found, clear old session and show page
                             localStorage.removeItem('volunteerProfile');
-                            localStorage.removeItem('stafflyRole');
+                            localStorage.removeItem('eventeaseRole');
                             document.documentElement.style.display = '';
                         }
                     } catch (e) {
                         document.documentElement.style.display = '';
                     }
-                } else if (localStorage.getItem('stafflyRole')) {
+                } else if (localStorage.getItem('eventeaseRole')) {
                      window.location.replace('app.html');
                 }
             })();
         </script>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="description" content="Staffly helps volunteers discover verified event opportunities, apply fast, and build real experience." />
-        <meta name="author" content="Staffly" />
-        <title>Staffly | Verified Event Opportunities</title>
-        <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+        <meta name="description" content="EventEase helps volunteers discover verified event opportunities, apply fast, and build real experience." />
+        <meta name="author" content="EventEase" />
+        <title>EventEase | Verified Event Opportunities</title>
+        <link rel="icon" type="image/jpeg" href="assets/img/logo.jpeg" />
         <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
         <link href="https://fonts.googleapis.com/css?family=Poppins:400,500,600,700,800" rel="stylesheet" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -80,7 +80,10 @@
     <body id="page-top" style="background:#141012;color:#F7F4EE">
         <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
             <div class="container px-4 px-lg-5">
-                <a class="navbar-brand" href="#page-top">Staffly</a>
+                <a class="navbar-brand" href="#page-top">
+                    <img src="assets/img/logo.jpeg" alt="EventEase Logo" style="height: 40px; margin-right: 10px; border-radius: 5px;" />
+                    EventEase
+                </a>
                 <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
                     Menu
                     
@@ -266,7 +269,7 @@
                     </div>
                 </div>
                 <div class="voice reveal reveal-delay-1" role="listitem">
-                    <div class="voice-quote">"I used to dread coordinating volunteers. Staffly made it something I actually look forward to."</div>
+                    <div class="voice-quote">"I used to dread coordinating volunteers. EventEase made it something I actually look forward to."</div>
                     <div class="voice-meta">
                         <span class="voice-name">Priya Nair</span>
                         <span class="voice-role">Event Director, ArtsFest - Chandigarh</span>
@@ -424,7 +427,7 @@
                             <p>University School of Automation & Robotics, Guru Gobind Singh Indraprastha University East Delhi Campus, Surajmal Vihar, Shahdara, Delhi - 110032</p>
                         </div>
                         <div class="contact-socials">
-                            <a href="https://www.instagram.com/stafflyyyyyy/?__pwa=1#" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+                            <a href="https://www.instagram.com/eventease/?__pwa=1#" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
                             <a href="#!" aria-label="Twitter" title="Twitter"><i class="fa-brands fa-twitter" aria-hidden="true"></i></a>
                             <a href="#!" aria-label="Facebook" title="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
                         </div>
@@ -434,7 +437,7 @@
         </section>
 
         <footer class="footer bg-black small text-center text-white-50">
-            <div class="container px-4 px-lg-5">Copyright &copy; Staffly Event Hub 2026</div>
+            <div class="container px-4 px-lg-5">Copyright &copy; EventEase Event Hub 2026</div>
         </footer>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>

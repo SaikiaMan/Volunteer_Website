@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Staffly — Volunteer Dashboard</title>
+<title>EventEase — Volunteer Dashboard</title>
+<link rel="icon" type="image/jpeg" href="assets/img/logo.jpeg" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
@@ -327,7 +328,7 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
   .topbar { padding: 0 12px; backdrop-filter: none; }
   .topbar-left { gap: 8px; }
   .breadcrumb { font-size: 11px; }
-  .breadcrumb span:nth-child(1), .breadcrumb span:nth-child(2) { display: none; } /* Hide Staffly and slash */
+  .breadcrumb span:nth-child(1), .breadcrumb span:nth-child(2) { display: none; } /* Hide EventEase and slash */
   .app-shell-bar { backdrop-filter: none; flex-wrap:wrap; align-items:center; }
   .app-shell-bar::-webkit-scrollbar { display:none; }
   .app-shell-tabs { order:2; margin-left:8px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; }
@@ -347,7 +348,10 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 <body class="app-shell-events">
 <div class="app-shell">
   <div class="app-shell-bar">
-    <a class="app-shell-brand" href="index.html">Staff<em>ly</em></a>
+    <a class="app-shell-brand" href="index.html">
+        <img src="assets/img/logo.jpeg" alt="Logo" style="height: 28px; margin-right: 8px; border-radius: 4px; vertical-align: middle;" />
+        Event<em>Ease</em>
+    </a>
     <div class="app-shell-tabs">
       <button class="app-shell-tab active" data-shell-tab="events" onclick="switchShellTab('events', this)">Events</button>
       <button class="app-shell-tab" data-shell-tab="dashboard" onclick="switchShellTab('dashboard', this)">Volunteer Dashboard</button>
@@ -393,14 +397,17 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo-row">
-      <a href="#" class="sidebar-logo">Staff<em>ly</em></a>
+      <a href="#" class="sidebar-logo">
+        <img src="assets/img/logo.jpeg" alt="Logo" style="height: 24px; margin-right: 8px; border-radius: 4px; vertical-align: middle;" />
+        Event<em>Ease</em>
+      </a>
       <button class="sidebar-close" onclick="closeSidebar()">&times;</button>
     </div>
     <div class="sidebar-profile">      <div class="sidebar-av" id="sb-initials">AK</div>      <div>        <div class="sidebar-av-name" id="sb-name">Amandeep Kaur</div>        <div class="sidebar-av-role"><span class="role-dot"></span> <span id="sb-role">Amandeep Kaur</span></div>      </div>    </div>
     <nav class="sidebar-nav">      <span class="nav-group-label">Dashboard</span>      <button class="nav-item active" data-tab="overview" onclick="switchTab('overview',this)">        <span class="nav-dot"></span> Overview      </button>      <button class="nav-item" data-tab="events" onclick="switchTab('events',this)">        <span class="nav-dot"></span> My Events        <span class="nav-badge" id="nb-events">0</span>      </button>      <button class="nav-item" data-tab="earnings" onclick="switchTab('earnings',this)">        <span class="nav-dot"></span> Earnings      </button>      <span class="nav-group-label">Account</span>      <button class="nav-item" data-tab="edit" onclick="switchTab('edit',this)">        <span class="nav-dot"></span> Edit Profile      </button>      <button class="nav-item">        <span class="nav-dot"></span> Notifications        <span class="nav-badge amber">0</span>      </button>      <button class="nav-item">        <span class="nav-dot"></span> Settings      </button>    </nav>
     <div class="sidebar-footer">      <button class="sidebar-footer-btn" onclick="logout()">Sign out</button>    </div>  </aside>
   <div class="main">
-    <header class="topbar">      <div class="topbar-left">        <button class="mob-toggle" onclick="openSidebar()">Menu</button>        <div class="breadcrumb"><span>Staffly</span> <span>/</span> <span id="breadcrumb-label">Overview</span></div>      </div>      <div class="topbar-right">
+    <header class="topbar">      <div class="topbar-left">        <button class="mob-toggle" onclick="openSidebar()">Menu</button>        <div class="breadcrumb"><span>EventEase</span> <span>/</span> <span id="breadcrumb-label">Overview</span></div>      </div>      <div class="topbar-right">
         <button class="topbar-btn primary" onclick="switchTab('edit',null)">Edit Profile</button>
       </div>    </header>
     <div class="content">
@@ -679,7 +686,7 @@ const CRUMB_MAP = { overview:'Overview', events:'My Events', earnings:'Earnings'
 function switchTab(name, triggerEl) { PANEL_NAMES.forEach(p => { document.getElementById('panel-' + p)?.classList.remove('active'); }); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.getElementById('panel-' + name)?.classList.add('active'); const tabBtn = document.querySelector(`.tab[data-tab="${name}"]`); if (tabBtn) tabBtn.classList.add('active'); const navBtn = document.querySelector(`.nav-item[data-tab="${name}"]`); if (navBtn) navBtn.classList.add('active'); document.getElementById('breadcrumb-label').textContent = CRUMB_MAP[name] || name; closeSidebar(); if (name === 'events') renderEvents(); }
 function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('show'); }
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
-function logout() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('stafflyRole'); window.location.href = 'index.html'; }
+function logout() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); window.location.href = 'index.html'; }
 let toastTimer;
 function showToast(msg, color = 'var(--green)') { const t = document.getElementById('toast'); document.getElementById('toast-msg').textContent = msg; document.getElementById('toast-dot').style.background = color; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800); }
 const cur = document.getElementById('cursor');
@@ -689,7 +696,7 @@ document.querySelectorAll('button, a, .stat-block, .event-row, .activity-row, .b
 // If the user is a Head, render the Head dashboard inside this page
 (function renderRoleBasedDashboard() {
   try {
-    const storedRole = (localStorage.getItem('stafflyRole') || '').toString().toLowerCase();
+    const storedRole = (localStorage.getItem('eventeaseRole') || '').toString().toLowerCase();
     const raw = localStorage.getItem('volunteerProfile');
     let profileRole = '';
     if (raw) {

@@ -22,11 +22,11 @@ const API_BASE_URL = normalizeApiBaseUrl(
 );
 
 function getStoredRole() {
-    return localStorage.getItem('stafflyRole') || 'volunteer';
+    return localStorage.getItem('eventeaseRole') || 'volunteer';
 }
 
 function setStoredRole(role) {
-    localStorage.setItem('stafflyRole', role || 'volunteer');
+    localStorage.setItem('eventeaseRole', role || 'volunteer');
 }
 
 async function trackPageView(page) {
@@ -101,7 +101,7 @@ function openLoginForm() {
 // Show a single logout button across pages when user is logged in
 function showLogoutIfLogged() {
     try {
-        const logged = !!localStorage.getItem('volunteerProfile') || !!localStorage.getItem('stafflyRole');
+        const logged = !!localStorage.getItem('volunteerProfile') || !!localStorage.getItem('eventeaseRole');
         if (!logged) return;
 
         // Only show a site-wide logout on the app shell (app.html). Don't alter the landing page.
@@ -123,7 +123,7 @@ function showLogoutIfLogged() {
                 btn.className = 'topbar-btn';
                 btn.type = 'button';
                 btn.textContent = 'Sign Out';
-                btn.onclick = function() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('stafflyRole'); window.location.href = 'index.html'; };
+                btn.onclick = function() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); window.location.href = 'index.html'; };
                 topbar.appendChild(btn);
                 logoutBtn = btn;
             }
@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Check if user already has a profile. If so, redirect directly to events page (app.html).
-    if (localStorage.getItem('volunteerProfile') || localStorage.getItem('stafflyRole')) {
+    if (localStorage.getItem('volunteerProfile') || localStorage.getItem('eventeaseRole')) {
         window.location.href = 'app.html';
         return;
     }

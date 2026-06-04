@@ -23,11 +23,11 @@ const API_BASE_URL = normalizeApiBaseUrl(
 );
 
 function getStoredRole() {
-    return localStorage.getItem('stafflyRole') || 'volunteer';
+    return localStorage.getItem('eventeaseRole') || 'volunteer';
 }
 
 function setStoredRole(role) {
-    localStorage.setItem('stafflyRole', role || 'volunteer');
+    localStorage.setItem('eventeaseRole', role || 'volunteer');
 }
 
 async function trackPageView(page) {

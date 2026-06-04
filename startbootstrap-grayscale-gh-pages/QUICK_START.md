@@ -1,4 +1,4 @@
-# Staffly Event Hub - Quick Start Guide
+# EventEase Event Hub - Quick Start Guide
 
 ## Getting Started
 
@@ -362,4 +362,4 @@ For questions or issues:
 
 ---
 
-Enjoy your new and improved Staffly Event Hub!
+Enjoy your new and improved EventEase Event Hub!
