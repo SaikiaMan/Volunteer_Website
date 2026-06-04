@@ -3,6 +3,8 @@ function normalizeApiBaseUrl(value) {
     const trimmedValue = String(value || '').trim();
 
     if (!trimmedValue) {
+        const host = (window.location && window.location.hostname) ? window.location.hostname : '';
+        if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:3001/api';
         return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
     }
 
@@ -16,7 +18,7 @@ function normalizeApiBaseUrl(value) {
 const API_BASE_URL = normalizeApiBaseUrl(
     window.API_BASE_URL ||
     document.documentElement.dataset.apiBaseUrl ||
-    'https://volunteerwebsite-production-8fcc.up.railway.app/api'
+    ''
 );
 
 function getStoredRole() {
