@@ -777,20 +777,7 @@ window.saveProfile = async function() {
     const resp = await fetch(`${API_BASE_URL}/volunteers/update`, { method: 'PUT', body: form });
     let result = await resp.json();
     if (!resp.ok) {
-      // If volunteer row missing, attempt to recreate via complete-profile
-      if (resp.status === 404 || (result && result.error && /no volunteer found/i.test(result.error))) {
-        try {
-          const restoreResp = await fetch(`${API_BASE_URL}/volunteers/complete-profile`, { method: 'POST', body: form });
-          const restoreResult = await restoreResp.json();
-          if (!restoreResp.ok) throw new Error(restoreResult.error || 'Profile restore failed');
-          // Use restored result as serverData
-          result = { data: restoreResult.user || restoreResult.data || restoreResult };
-        } catch (e) {
-          throw new Error(e.message || 'Profile restore failed');
-        }
-      } else {
         throw new Error(result.error || 'Server update failed');
-      }
     }
 
     const serverData = result.data || {};

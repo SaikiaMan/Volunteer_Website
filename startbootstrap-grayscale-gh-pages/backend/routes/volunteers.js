@@ -6,9 +6,10 @@ function createVolunteersRouter({ supabase, upload }) {
     const volunteers = createVolunteersController({ supabase });
 
     router.post('/volunteers/signup', upload.single('photoUpload'), volunteers.signup);
+    router.get('/volunteers/me', volunteers.me);
+    router.post('/volunteers/create-profile', volunteers.createProfile);
     router.post('/volunteers/login', volunteers.login);
     router.post('/volunteers/check-email', volunteers.checkEmail);
-    router.post('/volunteers/complete-profile', upload.single('photoUpload'), volunteers.completeProfile);
     router.put('/volunteers/update', upload.single('photoUpload'), volunteers.update);
 
     return router;

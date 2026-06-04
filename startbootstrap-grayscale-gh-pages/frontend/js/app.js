@@ -39,10 +39,63 @@ async function trackPageView(page) {
 }
 
 // Initialize app on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const currentRole = getStoredRole();
-    // If the stored role is 'head', do not redirect away — the app shell will render the Head dashboard in-place.
     
+    // Check for access_token in URL hash (Supabase email verification redirect)
+    const hash = window.location.hash;
+    if (hash && (hash.includes('access_token=') || hash.includes('type='))) {
+        const params = new URLSearchParams(hash.replace('#', '?'));
+        const accessToken = params.get('access_token');
+        if (accessToken) {
+            // Create a visible status indicator
+            const statusDiv = document.createElement('div');
+            statusDiv.style = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 15px 25px; border-radius: 50px; z-index: 9999; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3);';
+            statusDiv.innerHTML = '<span style="color: #64a19d">●</span> Finalizing your profile...';
+            document.body.appendChild(statusDiv);
+
+            console.log('Verification token detected in app, syncing profile...');
+            try {
+                let res = await fetch(`${API_BASE_URL}/volunteers/me`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                if (res.status === 404) {
+                    statusDiv.innerHTML = '<span style="color: #64a19d">●</span> Registering Profile in Database...';
+                    console.log('Profile missing in app, creating it now...');
+                    // Profile missing - create it since we have a valid token
+                    const createRes = await fetch(`${API_BASE_URL}/volunteers/create-profile`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    res = createRes;
+                }
+                
+                const data = await res.json();
+                if (data.success && data.user) {
+                    statusDiv.style.background = '#28a745';
+                    statusDiv.innerHTML = '✔ Profile Ready!';
+                    localStorage.setItem('volunteerProfile', JSON.stringify(data.user));
+                    console.log('Profile created/synced in app successfully.');
+                    
+                    setTimeout(() => {
+                        statusDiv.remove();
+                        // Clean the URL
+                        window.history.replaceState(null, null, window.location.pathname);
+                        window.location.reload(); // Refresh to show the dashboard
+                    }, 1000);
+                } else {
+                    statusDiv.style.background = '#dc3545';
+                    statusDiv.innerHTML = '✖ Error: ' + (data.error || 'Failed to create profile');
+                }
+            } catch (err) {
+                statusDiv.style.background = '#dc3545';
+                statusDiv.innerHTML = '✖ Connection Error to Backend';
+                console.error('Session sync failed in app:', err);
+            }
+        }
+    }
+
     // Check if user is logged in
     const userProfile = localStorage.getItem('volunteerProfile');
     if (!userProfile) {
