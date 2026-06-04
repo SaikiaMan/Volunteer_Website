@@ -70,7 +70,7 @@ function updateSignupButton() {
         loginBtn.textContent = 'View Profile';
         loginBtn.className = 'btn btn-primary btn-lg ms-3';
         loginBtn.onclick = function() {
-            window.location.href = 'profile.html';
+            window.location.href = 'app.html';
         };
     }
 }
@@ -376,10 +376,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 form.reset();
                 
-                // Clear form after 2 seconds
+                // Show success message and redirect to app.html
+                if (successMessage) {
+                    successMessage.classList.remove('d-none');
+                    successMessage.textContent = 'Signup successful! Redirecting to events...';
+                }
+                
                 setTimeout(() => {
-                    closeVolunteerForm();
-                }, 2000);
+                    window.location.href = 'app.html';
+                }, 1500);
                 
             } catch (error) {
                 console.error('Error:', error);
