@@ -1617,11 +1617,74 @@ function simulateAccess() {
   }
 }
 
+async function enforceHeadDashboardAccess() {
+  try {
+    const hasSupabaseClient = typeof window.supabase === 'object'
+      && window.supabase
+      && window.supabase.auth
+      && typeof window.supabase.auth.getUser === 'function'
+      && typeof window.supabase.from === 'function';
+
+    if (hasSupabaseClient) {
+      const userResult = await window.supabase.auth.getUser();
+      const user = userResult && userResult.data ? userResult.data.user : null;
+
+      if (!user) {
+        window.location.href = '/index.html';
+        return false;
+      }
+
+      const profileResult = await window.supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      const profile = profileResult ? profileResult.data : null;
+
+      if (!profile || profile.role !== 'head') {
+        window.location.href = '/app.html';
+        return false;
+      }
+
+      return true;
+    }
+
+    const raw = localStorage.getItem('volunteerProfile');
+    if (!raw) {
+      window.location.href = 'index.html';
+      return false;
+    }
+
+    let profile = null;
+    try { profile = JSON.parse(raw); } catch (e) { profile = null; }
+
+    const role = String((profile && profile.role) || localStorage.getItem('stafflyRole') || '').toLowerCase();
+    if (!role) {
+      window.location.href = 'index.html';
+      return false;
+    }
+    if (role !== 'head') {
+      window.location.href = 'app.html';
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    window.location.href = 'index.html';
+    return false;
+  }
+}
+
 // ── HELPERS ──
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 // ── BOOT ──
-init();
+(async function boot() {
+  const ok = await enforceHeadDashboardAccess();
+  if (!ok) return;
+  init();
+})();
 </script>
 </body>
 </html>
