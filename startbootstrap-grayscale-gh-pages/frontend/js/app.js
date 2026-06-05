@@ -586,7 +586,7 @@ function loadProfile() {
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('volunteerProfile');
-        window.location.href = 'index.html';
+        window.location.href = '/';
     }
 }
 

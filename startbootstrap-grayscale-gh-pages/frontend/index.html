@@ -4,7 +4,7 @@
         <script>
             // Synchronous check for immediate redirection to prevent flashing
             if (localStorage.getItem('volunteerProfile') || localStorage.getItem('eventeaseRole')) {
-                window.location.replace('app.html');
+                window.location.replace('/app');
             }
         </script>
         <script>
@@ -37,7 +37,7 @@
                                 const data = await response.json();
                                 if (data.profileExists || data.authExists) {
                                     // Email found in database, redirect to app!
-                                    window.location.replace('app.html');
+                                    window.location.replace('/app');
                                     return;
                                 }
                             }
@@ -51,7 +51,7 @@
                         document.documentElement.style.display = '';
                     }
                 } else if (localStorage.getItem('eventeaseRole')) {
-                     window.location.replace('app.html');
+                     window.location.replace('/app');
                 }
             })();
         </script>
@@ -128,7 +128,7 @@
                         </div>
                         <p class="subtext">The Art of Events</p>
                         <p class="hero-message">Verified opportunities. Faster signups. Better experiences.</p>
-                        <a class="hero-cta" href="app.html">Join for Free</a>
+                        <a class="hero-cta" href="/app">Join for Free</a>
 
                         <div class="scroll-indicator" aria-hidden="true">
                             <div class="mouse">

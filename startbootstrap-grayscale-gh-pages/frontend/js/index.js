@@ -70,7 +70,7 @@ function updateSignupButton() {
         loginBtn.textContent = 'View Profile';
         loginBtn.className = 'btn btn-primary btn-lg ms-3';
         loginBtn.onclick = function() {
-            window.location.href = 'app.html';
+            window.location.href = '/app';
         };
     }
 }
@@ -104,9 +104,9 @@ function showLogoutIfLogged() {
         const logged = !!localStorage.getItem('volunteerProfile') || !!localStorage.getItem('eventeaseRole');
         if (!logged) return;
 
-        // Only show a site-wide logout on the app shell (app.html). Don't alter the landing page.
+        // Only show a site-wide logout on the app shell (/app). Don't alter the landing page.
         const path = (window.location.pathname || '').toLowerCase();
-        const isAppShell = path.endsWith('/app.html') || path.endsWith('app.html');
+        const isAppShell = path.endsWith('/app') || path.endsWith('/app.html') || path.endsWith('app.html');
         if (!isAppShell) return;
 
         const hideIds = ['signupTopBtn','loginTopBtn','signupBtn','loginBtn','navSignupBtn','navLoginBtn'];
@@ -123,7 +123,7 @@ function showLogoutIfLogged() {
                 btn.className = 'topbar-btn';
                 btn.type = 'button';
                 btn.textContent = 'Sign Out';
-                btn.onclick = function() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); window.location.href = 'index.html'; };
+                btn.onclick = function() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); window.location.href = '/'; };
                 topbar.appendChild(btn);
                 logoutBtn = btn;
             }
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     
                     setTimeout(() => {
                         window.location.hash = ''; // Clear hash
-                        window.location.href = 'app.html';
+                        window.location.href = '/app';
                     }, 1000);
                     return; // Stop further execution
                 } else {
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Check if user already has a profile. If so, redirect directly to events page (app.html).
     if (localStorage.getItem('volunteerProfile') || localStorage.getItem('eventeaseRole')) {
-        window.location.href = 'app.html';
+        window.location.href = '/app';
         return;
     }
 
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 
                 setTimeout(() => {
-                    window.location.href = 'app.html';
+                    window.location.href = '/app';
                 }, 1500);
                 
             } catch (error) {
@@ -501,7 +501,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (response.status === 401 && result.error && result.error.toString().toLowerCase().includes('already')) {
                         // If backend says already signed in, redirect to app
                         setStoredRole('volunteer');
-                        setTimeout(() => { window.location.href = 'app.html'; }, 800);
+                        setTimeout(() => { window.location.href = '/app'; }, 800);
                         return;
                     }
 
@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                     // Redirect to the app page; the app will render the Head dashboard in-place
                     setTimeout(() => {
-                        window.location.href = 'app.html';
+                        window.location.href = '/app';
                     }, 900);
                     return;
                 }
@@ -535,7 +535,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 setTimeout(() => {
-                    window.location.href = 'app.html';
+                    window.location.href = '/app';
                 }, 1500);
                 return;
             } catch (error) {

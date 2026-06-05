@@ -1634,7 +1634,7 @@ async function enforceHeadDashboardAccess() {
       const user = userResult && userResult.data ? userResult.data.user : null;
 
       if (!user) {
-        window.location.href = '/index.html';
+        window.location.href = '/';
         return false;
       }
 
@@ -1647,7 +1647,7 @@ async function enforceHeadDashboardAccess() {
       const profile = profileResult ? profileResult.data : null;
 
       if (!profile || profile.role !== 'head') {
-        window.location.href = '/app.html';
+        window.location.href = '/app';
         return false;
       }
 
@@ -1656,7 +1656,7 @@ async function enforceHeadDashboardAccess() {
 
     const raw = localStorage.getItem('volunteerProfile');
     if (!raw) {
-      window.location.href = 'index.html';
+      window.location.href = '/';
       return false;
     }
 
@@ -1665,17 +1665,17 @@ async function enforceHeadDashboardAccess() {
 
     const role = String((profile && profile.role) || localStorage.getItem('eventeaseRole') || '').toLowerCase();
     if (!role) {
-      window.location.href = 'index.html';
+      window.location.href = '/';
       return false;
     }
     if (role !== 'head') {
-      window.location.href = 'app.html';
+      window.location.href = '/app';
       return false;
     }
 
     return true;
   } catch (e) {
-    window.location.href = 'index.html';
+    window.location.href = '/';
     return false;
   }
 }
