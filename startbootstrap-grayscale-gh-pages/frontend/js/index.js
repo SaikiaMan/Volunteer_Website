@@ -70,7 +70,7 @@ function updateSignupButton() {
         loginBtn.textContent = 'View Profile';
         loginBtn.className = 'btn btn-primary btn-lg ms-3';
         loginBtn.onclick = function() {
-            window.location.href = '/app';
+            window.location.href = 'app.html';
         };
     }
 }
@@ -123,7 +123,7 @@ function showLogoutIfLogged() {
                 btn.className = 'topbar-btn';
                 btn.type = 'button';
                 btn.textContent = 'Sign Out';
-                btn.onclick = function() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); window.location.href = '/'; };
+                btn.onclick = function() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); window.location.href = 'index.html'; };
                 topbar.appendChild(btn);
                 logoutBtn = btn;
             }
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     
                     setTimeout(() => {
                         window.location.hash = ''; // Clear hash
-                        window.location.href = '/app';
+                        window.location.href = 'app.html';
                     }, 1000);
                     return; // Stop further execution
                 } else {
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Check if user already has a profile. If so, redirect directly to events page (app.html).
     if (localStorage.getItem('volunteerProfile') || localStorage.getItem('eventeaseRole')) {
-        window.location.href = '/app';
+        window.location.href = 'app.html';
         return;
     }
 
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 
                 setTimeout(() => {
-                    window.location.href = '/app';
+                    window.location.href = 'app.html';
                 }, 1500);
                 
             } catch (error) {
@@ -501,7 +501,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (response.status === 401 && result.error && result.error.toString().toLowerCase().includes('already')) {
                         // If backend says already signed in, redirect to app
                         setStoredRole('volunteer');
-                        setTimeout(() => { window.location.href = '/app'; }, 800);
+                        setTimeout(() => { window.location.href = 'app.html'; }, 800);
                         return;
                     }
 
@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                     // Redirect to the app page; the app will render the Head dashboard in-place
                     setTimeout(() => {
-                        window.location.href = '/app';
+                        window.location.href = 'app.html';
                     }, 900);
                     return;
                 }
@@ -535,7 +535,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 setTimeout(() => {
-                    window.location.href = '/app';
+                    window.location.href = 'app.html';
                 }, 1500);
                 return;
             } catch (error) {

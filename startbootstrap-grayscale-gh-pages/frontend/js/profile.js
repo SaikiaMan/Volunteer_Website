@@ -56,6 +56,6 @@ window.addEventListener('DOMContentLoaded', function() {
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('volunteerProfile');
-        window.location.href = '/';
+        window.location.href = 'index.html';
     }
 }

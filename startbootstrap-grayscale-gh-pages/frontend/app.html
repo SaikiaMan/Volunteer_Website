@@ -348,7 +348,7 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 <body class="app-shell-events">
 <div class="app-shell">
   <div class="app-shell-bar">
-    <a class="app-shell-brand" href="/">
+    <a class="app-shell-brand" href="index.html">
         <img src="assets/img/logo.png" alt="Logo" style="height: 80px; margin-right: 8px; border-radius: 4px; vertical-align: middle; margin-top: -12px; margin-bottom: -12px;" />
         Event<em>Ease</em>
     </a>
@@ -359,12 +359,12 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
     </div>
     <div class="topbar-right">
       <div class="topbar-main">
-        <button id="signupTopBtn" class="topbar-btn primary" type="button" onclick="window.location.href='/?auth=signup'">Sign Up</button>
-        <button id="loginTopBtn" class="topbar-btn" type="button" onclick="window.location.href='/?auth=login'">Login</button>
+        <button id="signupTopBtn" class="topbar-btn primary" type="button" onclick="window.location.href='index.html?auth=signup'">Sign Up</button>
+        <button id="loginTopBtn" class="topbar-btn" type="button" onclick="window.location.href='index.html?auth=login'">Login</button>
       </div>
       <div class="topbar-alt">
         <button id="signoutTopBtn" class="topbar-btn" style="display:none;" type="button" onclick="logout()">Sign Out</button>
-        <button class="app-shell-logout" type="button" onclick="window.location.href='/'">Back to Home</button>
+        <button class="app-shell-logout" type="button" onclick="window.location.href='index.html'">Back to Home</button>
       </div>
     </div>
   </div>
@@ -686,7 +686,7 @@ const CRUMB_MAP = { overview:'Overview', events:'My Events', earnings:'Earnings'
 function switchTab(name, triggerEl) { PANEL_NAMES.forEach(p => { document.getElementById('panel-' + p)?.classList.remove('active'); }); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.getElementById('panel-' + name)?.classList.add('active'); const tabBtn = document.querySelector(`.tab[data-tab="${name}"]`); if (tabBtn) tabBtn.classList.add('active'); const navBtn = document.querySelector(`.nav-item[data-tab="${name}"]`); if (navBtn) navBtn.classList.add('active'); document.getElementById('breadcrumb-label').textContent = CRUMB_MAP[name] || name; closeSidebar(); if (name === 'events') renderEvents(); }
 function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('show'); }
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
-function logout() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); window.location.href = '/'; }
+function logout() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); window.location.href = 'index.html'; }
 let toastTimer;
 function showToast(msg, color = 'var(--green)') { const t = document.getElementById('toast'); document.getElementById('toast-msg').textContent = msg; document.getElementById('toast-dot').style.background = color; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800); }
 const cur = document.getElementById('cursor');
@@ -875,11 +875,6 @@ function applyAppShellMobileLayout() {
 window.addEventListener('load', applyAppShellMobileLayout);
 let __appShellMobileLayoutTimeout = null;
 window.addEventListener('resize', function() { clearTimeout(__appShellMobileLayoutTimeout); __appShellMobileLayoutTimeout = setTimeout(applyAppShellMobileLayout, 120); });
-</script>
-</body>
-</html>
-
-out, 120); });
 </script>
 </body>
 </html>

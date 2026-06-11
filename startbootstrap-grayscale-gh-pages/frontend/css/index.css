@@ -1121,6 +1121,11 @@ section {
         padding: 0.8rem 1.35rem;
     }
 
+    /* Hide scroll indicator on mobile to prevent collision with Join button */
+    .scroll-indicator {
+        display: none;
+    }
+
     .about-section,
     .benefits-section,
     .featured-section,
