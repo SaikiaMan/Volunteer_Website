@@ -28,7 +28,25 @@ body {
 	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-#mainNav .nav-link,
+#mainNav .nav-link {
+	cursor: auto;
+	padding-bottom: 5px !important;
+	margin-bottom: 5px !important;
+	border-bottom: 3px solid transparent !important;
+	transition: color 0.3s ease, border-color 0.3s ease !important;
+}
+
+#mainNav .nav-link.active {
+	color: var(--green) !important;
+	border-bottom-color: var(--green) !important;
+}
+
+#mainNav .nav-link:focus,
+#mainNav .nav-link:active {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
 #mainNav .navbar-brand,
 #mainNav .navbar-toggler,
 #mainNav button,
