@@ -21,7 +21,9 @@ const localAllowedOrigins = [
 ];
 
 const productionAllowedOrigins = [
-    'https://volunteer-website-mu.vercel.app'
+    'https://volunteer-website-mu.vercel.app',
+    'https://eventease.in',
+    'https://www.eventease.in'
 ];
 
 const envAllowedOrigins = process.env.CORS_ORIGINS
@@ -37,7 +39,8 @@ const allowedOrigins = Array.from(new Set([
 function isAllowedOrigin(origin) {
     if (!origin) return true;
     if (allowedOrigins.includes(origin)) return true;
-    return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+    if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) return true;
+    return /^https:\/\/([a-z0-9-]+\.)?eventease\.in$/i.test(origin);
 }
 
 const corsOptions = {

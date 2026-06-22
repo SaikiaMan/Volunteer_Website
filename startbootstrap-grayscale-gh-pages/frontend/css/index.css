@@ -15,6 +15,7 @@ html {
 }
 
 body {
+    position: relative;
     background:
         radial-gradient(circle at top left, rgba(255, 179, 71, 0.16), transparent 28%),
         radial-gradient(circle at top right, rgba(255, 92, 68, 0.1), transparent 24%),
@@ -68,6 +69,11 @@ section {
     color: rgba(255, 255, 255, 0.78) !important;
     font-weight: 600;
     transition: color 0.2s ease, transform 0.2s ease;
+}
+
+#mainNav .nav-link:focus {
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 #mainNav .nav-link:hover {
@@ -1121,6 +1127,11 @@ section {
         padding: 0.8rem 1.35rem;
     }
 
+    /* Hide scroll indicator on mobile to prevent collision with Join button */
+    .scroll-indicator {
+        display: none;
+    }
+
     .about-section,
     .benefits-section,
     .featured-section,
@@ -1181,12 +1192,11 @@ section {
 
 a:focus,
 button:focus {
-    outline: 2px solid rgba(116, 185, 181, 0.85);
-    outline-offset: 2px;
+    outline: none;
 }
 
 .btn:focus {
-    box-shadow: 0 0 0 0.2rem rgba(255, 179, 71, 0.22);
+    box-shadow: none;
 }
 
 .benefit-icon {

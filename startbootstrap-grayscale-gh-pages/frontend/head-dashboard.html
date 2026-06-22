@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Staffly — Head Dashboard</title>
+<title>EventEase — Head Dashboard</title>
+<link rel="icon" type="image/jpeg" href="assets/img/logo.jpeg" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
@@ -585,7 +586,10 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
 <div class="app">
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
-    <a href="#" class="sidebar-logo">Staff<em>ly</em></a>
+    <a href="#" class="sidebar-logo">
+      <img src="assets/img/logo.jpeg" alt="Logo" style="height: 24px; margin-right: 8px; border-radius: 4px; vertical-align: middle;" />
+      Event<em>Ease</em>
+    </a>
     <div class="sidebar-event">
       <div class="sidebar-event-label">Current Event</div>
       <div class="sidebar-event-name">Green City Marathon 2026</div>
@@ -631,7 +635,7 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
     <header class="topbar">
       <div class="topbar-left">
         <button class="topbar-btn menu-toggle" id="menuToggle" onclick="toggleSidebar()" aria-label="Open menu" aria-expanded="false">☰</button>
-        <div class="breadcrumb">Staffly <span>/</span> <span id="topbar-title-txt">Applications</span></div>
+        <div class="breadcrumb">EventEase <span>/</span> <span id="topbar-title-txt">Applications</span></div>
       </div>
       <div class="topbar-right">
         <button class="topbar-btn" onclick="openRequirementsModal()">Config changes</button>
@@ -860,7 +864,7 @@ let eventRequirements = { ...DEFAULT_REQUIREMENTS, configured: false };
 let ACCEPT_TARGET = DEFAULT_REQUIREMENTS.targetVolunteers;
 let SUPERVISOR_TARGET = DEFAULT_REQUIREMENTS.supervisors;
 let ORGANISER_TARGET = DEFAULT_REQUIREMENTS.organisers;
-const HEAD_DASHBOARD_STORAGE_KEY = 'stafflyHeadDashboardState';
+const HEAD_DASHBOARD_STORAGE_KEY = 'eventeaseHeadDashboardState';
 
 // Mobile render limits and debounce timers
 const APPS_RENDER_LIMIT = 30; // number of app cards to render on small screens initially
@@ -874,7 +878,7 @@ function getLoggedInHeadProfile() {
     if (!raw) return {};
     const profile = JSON.parse(raw);
     if (!profile || typeof profile !== 'object') return {};
-    const role = String(profile.role || localStorage.getItem('stafflyRole') || '').toLowerCase();
+    const role = String(profile.role || localStorage.getItem('eventeaseRole') || '').toLowerCase();
     if (role && role !== 'head') return {};
     return profile;
   } catch (error) {
@@ -1617,11 +1621,74 @@ function simulateAccess() {
   }
 }
 
+async function enforceHeadDashboardAccess() {
+  try {
+    const hasSupabaseClient = typeof window.supabase === 'object'
+      && window.supabase
+      && window.supabase.auth
+      && typeof window.supabase.auth.getUser === 'function'
+      && typeof window.supabase.from === 'function';
+
+    if (hasSupabaseClient) {
+      const userResult = await window.supabase.auth.getUser();
+      const user = userResult && userResult.data ? userResult.data.user : null;
+
+      if (!user) {
+        window.location.href = 'index.html';
+        return false;
+      }
+
+      const profileResult = await window.supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      const profile = profileResult ? profileResult.data : null;
+
+      if (!profile || profile.role !== 'head') {
+        window.location.href = 'app.html';
+        return false;
+      }
+
+      return true;
+    }
+
+    const raw = localStorage.getItem('volunteerProfile');
+    if (!raw) {
+      window.location.href = 'index.html';
+      return false;
+    }
+
+    let profile = null;
+    try { profile = JSON.parse(raw); } catch (e) { profile = null; }
+
+    const role = String((profile && profile.role) || localStorage.getItem('eventeaseRole') || '').toLowerCase();
+    if (!role) {
+      window.location.href = 'index.html';
+      return false;
+    }
+    if (role !== 'head') {
+      window.location.href = 'app.html';
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    window.location.href = 'index.html';
+    return false;
+  }
+}
+
 // ── HELPERS ──
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 // ── BOOT ──
-init();
+(async function boot() {
+  const ok = await enforceHeadDashboardAccess();
+  if (!ok) return;
+  init();
+})();
 </script>
 </body>
 </html>
