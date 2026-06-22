@@ -1,3 +1,15 @@
+const { createClient } = require('@supabase/supabase-js');
+
+function getAuthClient() {
+    return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+        }
+    });
+}
+
 function createVolunteersController({ supabase }) {
     return {
         async signup(req, res) {
@@ -49,7 +61,7 @@ function createVolunteersController({ supabase }) {
 
                 // Supabase signUp with user_metadata
                 // If email confirmation is enabled in Supabase, this will NOT return a session
-                const { data: authData, error: authError } = await supabase.auth.signUp({
+                const { data: authData, error: authError } = await getAuthClient().auth.signUp({
                     email,
                     password,
                     options: {
@@ -128,7 +140,7 @@ function createVolunteersController({ supabase }) {
                     });
                 }
 
-                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                const { data: authData, error: authError } = await getAuthClient().auth.signInWithPassword({
                     email,
                     password
                 });
@@ -215,7 +227,7 @@ function createVolunteersController({ supabase }) {
                 }
 
                 const token = authHeader.replace('Bearer ', '');
-                const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+                const { data: { user }, error: authError } = await getAuthClient().auth.getUser(token);
 
                 if (authError || !user) {
                     return res.status(401).json({ success: false, error: 'Invalid or expired token' });
@@ -252,7 +264,7 @@ function createVolunteersController({ supabase }) {
                 }
 
                 const token = authHeader.replace('Bearer ', '');
-                const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+                const { data: { user }, error: authError } = await getAuthClient().auth.getUser(token);
 
                 if (authError || !user) {
                     console.error('Profile Creation Error: Invalid token', authError);

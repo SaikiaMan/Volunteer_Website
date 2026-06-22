@@ -92,12 +92,24 @@ function normalizeEvent(event) {
 
 async function getEvents(req, res, supabase) {
     try {
+        console.log('--- GET EVENTS QUERY ---');
+        console.log('Supabase client url:', supabase.supabaseUrl);
+        console.log('Supabase client key starts with:', supabase.supabaseKey ? supabase.supabaseKey.substring(0, 10) + '...' : 'none');
+        
         const { data, error } = await supabase
             .from('Events')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error('Database query error in getEvents:', error);
+            throw error;
+        }
+
+        console.log('Raw database data retrieved count:', Array.isArray(data) ? data.length : 'not an array');
+        if (Array.isArray(data) && data.length > 0) {
+            console.log('Sample raw event id:', data[0].id, 'title:', data[0].title);
+        }
 
         const events = Array.isArray(data) ? data.map(normalizeEvent) : [];
         res.json(events);

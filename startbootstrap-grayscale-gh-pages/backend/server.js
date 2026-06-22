@@ -37,7 +37,7 @@ const allowedOrigins = Array.from(new Set([
 ]));
 
 function isAllowedOrigin(origin) {
-    if (!origin) return true;
+    if (!origin || origin === 'null') return true;
     if (allowedOrigins.includes(origin)) return true;
     if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) return true;
     return /^https:\/\/([a-z0-9-]+\.)?eventease\.in$/i.test(origin);
@@ -65,7 +65,16 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
+console.log('--- SUPABASE INITIALIZATION ---');
+console.log('process.env.SUPABASE_URL:', supabaseUrl);
+console.log('process.env.SUPABASE_SERVICE_ROLE_KEY present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+console.log('process.env.SUPABASE_SERVICE_ROLE_KEY length:', process.env.SUPABASE_SERVICE_ROLE_KEY ? process.env.SUPABASE_SERVICE_ROLE_KEY.length : 0);
+console.log('process.env.SUPABASE_ANON_KEY present:', !!process.env.SUPABASE_ANON_KEY);
+console.log('process.env.SUPABASE_ANON_KEY length:', process.env.SUPABASE_ANON_KEY ? process.env.SUPABASE_ANON_KEY.length : 0);
+
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+console.log('Selected supabaseKey length:', supabaseKey ? supabaseKey.length : 0);
+console.log('Selected supabaseKey starts with:', supabaseKey ? supabaseKey.substring(0, 10) + '...' : 'none');
 
 if (!supabaseUrl || !supabaseKey) {
     console.error('Missing Supabase credentials in .env file');
@@ -76,6 +85,8 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+console.log('Supabase client initialized');
+console.log('-------------------------------');
 
 // Debug: Log all registered API requests (must be registered before API routes)
 app.use((req, res, next) => {
