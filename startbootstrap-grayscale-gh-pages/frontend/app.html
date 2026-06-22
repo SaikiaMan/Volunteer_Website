@@ -290,7 +290,10 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 .shell-event-meta { display:flex; justify-content:space-between; gap:12px; font-size:12px; color:var(--muted2); margin-bottom:10px; }
 .shell-event-title { font-size:18px; font-weight:500; margin-bottom:8px; }
 .shell-event-desc { font-size:13px; line-height:1.65; color:var(--muted3); margin-bottom:14px; }
-.shell-event-btn { width:100%; background:var(--green); color:var(--black); border:none; border-radius:20px; padding:10px 14px; font:500 13px var(--sans); }
+.shell-event-btn { width:100%; background:var(--green); color:var(--black); border:none; border-radius:20px; padding:10px 14px; font:500 13px var(--sans); cursor:pointer; }
+.shell-event-btn:hover { box-shadow:0 0 18px var(--green-glow); }
+.shell-event-btn:disabled { opacity:.5; cursor:not-allowed; }
+.shell-card-image { width:100%; height:160px; object-fit:cover; display:block; border-bottom:1px solid var(--border); }
 .shell-chat { min-height:calc(100vh - 140px); display:grid; place-items:center; }
 .shell-coming { max-width:640px; width:100%; background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:36px 28px; text-align:center; }
 .shell-coming h2 { font-family:var(--serif); font-size:42px; letter-spacing:-1px; margin-bottom:10px; }
@@ -392,7 +395,23 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 <div class="toast" id="toast">  <div class="toast-dot" id="toast-dot"></div>  <span id="toast-msg"></span></div>
 <script>
 // Ensure API base is available on this page
-const API_BASE_URL = window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
+function normalizeApiBaseUrl(value) {
+    const trimmedValue = String(value || '').trim();
+    if (!trimmedValue) {
+        return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
+    }
+    if (/^https?:\/\//i.test(trimmedValue)) {
+        return trimmedValue.replace(/\/$/, '');
+    }
+    return `https://${trimmedValue.replace(/^\/+/, '').replace(/\/$/, '')}`;
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(
+    window.API_BASE_URL ||
+    document.documentElement.dataset.apiBaseUrl ||
+    'https://volunteerwebsite-production-8fcc.up.railway.app/api'
+);
+
 function switchShellTab(tabName, triggerEl) {
   const shellPanels = document.querySelectorAll('.shell-panel');
   shellPanels.forEach(panel => panel.classList.remove('active'));
@@ -402,6 +421,10 @@ function switchShellTab(tabName, triggerEl) {
   if (triggerEl) triggerEl.classList.add('active');
   document.body.classList.remove('app-shell-events', 'app-shell-dashboard', 'app-shell-chat');
   document.body.classList.add(`app-shell-${tabName}`);
+
+  if (tabName === 'events') {
+    loadEvents();
+  }
 }
 
 function getStoredProfile() {
@@ -551,6 +574,127 @@ function saveProfileHandler(btn) {
   }
 }
 
+let shellEvents = [];
+
+async function loadEvents() {
+    const grid = document.querySelector('#shell-events .shell-grid');
+    if (!grid) return;
+
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">Loading events...</div>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/events/list`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        shellEvents = Array.isArray(data) ? data : (data.data || []);
+        renderShellEvents();
+    } catch (error) {
+        console.error('Failed to load events:', error);
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1;">Could not load events. <button class="topbar-btn" type="button" onclick="loadEvents()">Retry</button></div>`;
+    }
+}
+
+function renderShellEvents() {
+    const grid = document.querySelector('#shell-events .shell-grid');
+    if (!grid) return;
+
+    if (!shellEvents.length) {
+        grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">No events available yet.</div>';
+        return;
+    }
+
+    grid.innerHTML = shellEvents.map(event => createShellEventCard(event)).join('');
+}
+
+function createShellEventCard(event) {
+    const rawDate = event.date || event.event_date;
+    const formattedDate = rawDate
+        ? new Date(rawDate).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          })
+        : 'Date TBD';
+
+    const timeRange = [event.start_time, event.end_time]
+        .filter(Boolean)
+        .join(' - ') || '';
+
+    const volunteerLimit = event.volunteer_limit != null ? Number(event.volunteer_limit) : (event.slots || 0);
+    const acceptedCount = event.accepted_count != null ? Number(event.accepted_count) : (event.filledSlots || 0);
+    const availableSlots = Math.max(volunteerLimit - acceptedCount, 0);
+    const salary = event.salary != null ? Number(event.salary) : (event.hourlyRate || event.hourly_rate || 0);
+    const category = String(event.category || event.status || 'Event').toLowerCase();
+    const categoryColors = {
+        music: '#c084fc',
+        tech: '#60a5fa',
+        technology: '#60a5fa',
+        sports: '#ff4d4d',
+        upcoming: '#1dff8f',
+        general: '#1dff8f'
+    };
+    const accent = categoryColors[category] || categoryColors.general;
+    const safeTitle = String(event.title || 'Untitled Event').replace(/'/g, "\\'");
+    const imageUrl = event.image_url || event.image || '';
+
+    return `
+        <div class="shell-card">
+            <img src="${imageUrl}" alt="${event.title || ''}" class="shell-card-image" onerror="this.style.display='none'">
+            <div class="shell-card-body">
+                <div class="shell-event-meta">
+                    <span style="color:${accent};text-transform:uppercase;font-size:11px;letter-spacing:.5px;">${event.category || event.status || 'Event'}</span>
+                    <span>${formattedDate}${timeRange ? ' · ' + timeRange : ''}</span>
+                </div>
+                <div class="shell-event-title">${event.title || 'Untitled Event'}</div>
+                <div class="shell-event-desc">${event.description || event.location || ''}</div>
+                <div class="shell-event-meta" style="margin-bottom:14px; flex-wrap:wrap;">
+                    <span>📍 ${event.location || 'Location TBD'}</span>
+                    <span>💰 ₹${salary}</span>
+                    <span>🎫 ${availableSlots} of ${volunteerLimit} spots left</span>
+                </div>
+                <button class="shell-event-btn" type="button" onclick="applyForEvent(${event.id}, '${safeTitle}', this)">Apply Now</button>
+            </div>
+        </div>
+    `;
+}
+
+async function applyForEvent(eventId, eventTitle, btn) {
+    const userProfile = localStorage.getItem('volunteerProfile');
+    if (!userProfile) {
+        alert('Please sign up first to apply for events.');
+        switchShellTab('dashboard', document.querySelector('.app-shell-tab[data-shell-tab="dashboard"]'));
+        return;
+    }
+
+    try {
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Applying...';
+        }
+
+        // Persist the application locally until a dedicated backend apply endpoint is added.
+        const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
+        if (!applications.find(app => app.eventId === eventId)) {
+            applications.push({ eventId, eventTitle, appliedAt: new Date().toISOString() });
+            localStorage.setItem('stafflyApplications', JSON.stringify(applications));
+        }
+
+        showToast(`Applied for "${eventTitle}"!`, 'var(--green)');
+        if (btn) {
+            btn.textContent = 'Applied';
+        }
+    } catch (error) {
+        console.error('Apply error:', error);
+        showToast('Failed to apply. Please try again.', 'var(--red)');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Apply Now';
+        }
+    }
+}
+
 function init() {
   hydrateProfile();
   renderSkills();
@@ -560,6 +704,7 @@ function init() {
   renderEvents();
   renderEarnings();
   updateTopbarAuthButtons();
+  loadEvents();
 }
 
 function hydrateProfile() {

@@ -74,15 +74,15 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-app.use('/api', createApiRouter({ supabase, upload }));
-
-// Debug: Log all registered routes
+// Debug: Log all registered API requests (must be registered before API routes)
 app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {
         console.log(`API Request: ${req.method} ${req.path}`);
     }
     next();
 });
+
+app.use('/api', createApiRouter({ supabase, upload }));
 
 // Catch 404 for debugging
 app.use((req, res) => {

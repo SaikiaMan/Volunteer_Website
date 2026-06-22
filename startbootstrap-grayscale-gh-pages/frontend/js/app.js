@@ -107,75 +107,126 @@ function switchTab(tabName, pushState = true) {
     }
 }
 
-// Load and display events
-function loadEvents() {
+let appEvents = [];
+let currentEventFilter = 'all';
+
+// Load and display events from the backend
+async function loadEvents() {
     const eventsGrid = document.getElementById('eventsGrid');
     if (!eventsGrid) return;
-    eventsGrid.innerHTML = '<div class="empty-state">No events available yet.</div>';
+
+    eventsGrid.innerHTML = '<div class="empty-state">Loading events...</div>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/events/list`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        appEvents = Array.isArray(data) ? data : (data.data || []);
+        renderEventsGrid();
+    } catch (error) {
+        console.error('Failed to load events:', error);
+        eventsGrid.innerHTML = '<div class="empty-state">Could not load events. Please try again later.</div>';
+    }
+}
+
+function renderEventsGrid() {
+    const eventsGrid = document.getElementById('eventsGrid');
+    if (!eventsGrid) return;
+
+    let eventsToRender = appEvents;
+    if (currentEventFilter && currentEventFilter !== 'all') {
+        eventsToRender = appEvents.filter(event => {
+            const category = String(event.category || '').toLowerCase();
+            return category === currentEventFilter ||
+                   (currentEventFilter === 'tech' && category === 'technology');
+        });
+    }
+
+    if (!eventsToRender.length) {
+        eventsGrid.innerHTML = '<div class="empty-state">No events available yet.</div>';
+        return;
+    }
+
+    eventsGrid.innerHTML = '';
+    eventsToRender.forEach(event => {
+        eventsGrid.appendChild(createEventCard(event));
+    });
 }
 
 // Create event card element
 function createEventCard(event) {
     const card = document.createElement('div');
     card.className = 'event-card';
-    
-    const availableSlots = event.slots - event.filledSlots;
-    const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
-    
+
+    const volunteerLimit = event.volunteer_limit != null ? Number(event.volunteer_limit) : (event.slots || 0);
+    const acceptedCount = event.accepted_count != null ? Number(event.accepted_count) : (event.filledSlots || 0);
+    const availableSlots = Math.max(volunteerLimit - acceptedCount, 0);
+    const rawDate = event.date || event.event_date;
+    const formattedDate = rawDate
+        ? new Date(rawDate).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          })
+        : 'Date TBD';
+    const salary = event.salary != null ? Number(event.salary) : (event.hourlyRate || event.hourly_rate || 0);
+    const safeTitle = String(event.title || 'Untitled Event').replace(/'/g, "\\'");
+    const imageUrl = event.image_url || event.image || '';
+
     card.innerHTML = `
-        <img src="${event.image}" alt="${event.title}" class="event-image">
+        <img src="${imageUrl}" alt="${event.title || ''}" class="event-image" onerror="this.style.display='none'">
         <div class="event-card-body">
             <div class="event-date">
                 ${formattedDate}
             </div>
-            <h3 class="event-title">${event.title}</h3>
+            <h3 class="event-title">${event.title || 'Untitled Event'}</h3>
             <div class="event-location">
-                ${event.location}
+                ${event.location || 'Location TBD'}
             </div>
             <div class="event-details">
                 <div class="detail-item">
-                    <span>Hourly Rate</span>
-                    <strong>$${event.hourlyRate}</strong>
+                    <span>Salary</span>
+                    <strong>₹${salary}</strong>
                 </div>
                 <div class="detail-item">
                     <span>Available Slots</span>
                     <strong>${availableSlots}</strong>
                 </div>
             </div>
-            <button class="event-btn" onclick="applyForEvent(${event.id}, '${event.title}')">
+            <button class="event-btn" onclick="applyForEvent(${event.id}, '${safeTitle}')">
                 Apply Now
             </button>
         </div>
     `;
-    
+
     return card;
 }
 
 // Filter events by category
 function filterEvents(category) {
+    currentEventFilter = category;
+
     // Update active filter button
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    
+
     const activeBtn = Array.from(document.querySelectorAll('.filter-btn')).find(btn => {
         return (category === 'all' && btn.textContent.includes('All')) ||
                (category === 'music' && btn.textContent.includes('Music')) ||
                (category === 'tech' && btn.textContent.includes('Technology')) ||
                (category === 'sports' && btn.textContent.includes('Sports'));
     });
-    
+
     if (activeBtn) {
         activeBtn.classList.add('active');
         activeBtn.dataset.filter = category;
     }
-    
-    // Reload events with filter
-    loadEvents();
+
+    // Re-render events with filter
+    renderEventsGrid();
 }
 
 // Apply for an event
@@ -186,9 +237,19 @@ function applyForEvent(eventId, eventTitle) {
         switchTab('dashboard');
         return;
     }
-    
-    // Mock API call
-    alert(`Successfully applied for "${eventTitle}"! You will receive confirmation soon.`);
+
+    // Persist the application locally until a dedicated backend apply endpoint is added.
+    try {
+        const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
+        if (!applications.find(app => app.eventId === eventId)) {
+            applications.push({ eventId, eventTitle, appliedAt: new Date().toISOString() });
+            localStorage.setItem('stafflyApplications', JSON.stringify(applications));
+        }
+        alert(`Successfully applied for "${eventTitle}"! You will receive confirmation soon.`);
+    } catch (error) {
+        console.error('Apply error:', error);
+        alert('Failed to apply. Please try again.');
+    }
 }
 
 // Load and display profile/dashboard

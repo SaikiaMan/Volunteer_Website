@@ -1,6 +1,7 @@
 const express = require('express');
 const createPagesRouter = require('./pages');
 const createVolunteersRouter = require('./volunteers');
+const createEventsRouter = require('./events');
 
 function createApiRouter({ supabase, upload }) {
     const router = express.Router();
@@ -12,6 +13,7 @@ function createApiRouter({ supabase, upload }) {
 
     router.use(createPagesRouter());
     router.use(createVolunteersRouter({ supabase, upload }));
+    router.use(createEventsRouter({ supabase }));
 
     return router;
 }
