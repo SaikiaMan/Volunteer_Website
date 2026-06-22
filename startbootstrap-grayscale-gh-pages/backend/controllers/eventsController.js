@@ -1,3 +1,64 @@
+async function isHeadUser(supabase, identifier) {
+    if (!identifier) return false;
+
+    try {
+        const cleanedIdentifier = String(identifier).trim();
+
+        // Try matching by email first
+        const { data: byEmail, error: emailError } = await supabase
+            .from('Volunteers')
+            .select('role')
+            .ilike('role', 'head')
+            .ilike('email', cleanedIdentifier)
+            .limit(1);
+
+        if (emailError) {
+            console.error('isHeadUser email check error:', emailError);
+        } else if (Array.isArray(byEmail) && byEmail.length > 0) {
+            return true;
+        }
+
+        // Try matching by user_id (UUID) only if identifier looks like a UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(cleanedIdentifier)) {
+            const { data: byUserId, error: userIdError } = await supabase
+                .from('Volunteers')
+                .select('role')
+                .ilike('role', 'head')
+                .eq('user_id', cleanedIdentifier)
+                .limit(1);
+
+            if (userIdError) {
+                console.error('isHeadUser user_id check error:', userIdError);
+            } else if (Array.isArray(byUserId) && byUserId.length > 0) {
+                return true;
+            }
+        }
+
+        // Try matching by numeric id
+        const numericId = Number(cleanedIdentifier);
+        if (!Number.isNaN(numericId)) {
+            const { data: byId, error: idError } = await supabase
+                .from('Volunteers')
+                .select('role')
+                .ilike('role', 'head')
+                .eq('id', numericId)
+                .limit(1);
+
+            if (idError) {
+                console.error('isHeadUser id check error:', idError);
+            } else if (Array.isArray(byId) && byId.length > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    } catch (err) {
+        console.error('isHeadUser exception:', err);
+        return false;
+    }
+}
+
 function normalizeEvent(event) {
     if (!event || typeof event !== 'object') {
         return event;
@@ -68,7 +129,10 @@ async function createEvent(req, res, supabase) {
             waitlist_count,
             status,
             image_url,
-            image
+            image,
+            created_by_email,
+            created_by_user_id,
+            created_by
         } = req.body;
 
         // Validation
@@ -76,6 +140,17 @@ async function createEvent(req, res, supabase) {
             return res.status(400).json({
                 success: false,
                 error: 'Title, location, and event_date are required'
+            });
+        }
+
+        // Authorization: only Head users can create events
+        const headIdentifier = created_by_email || created_by_user_id || created_by;
+        const isHead = await isHeadUser(supabase, headIdentifier);
+
+        if (!isHead) {
+            return res.status(403).json({
+                success: false,
+                error: 'Only Head users can create events'
             });
         }
 

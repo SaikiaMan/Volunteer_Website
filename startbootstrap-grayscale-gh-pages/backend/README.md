@@ -142,7 +142,9 @@ List all events, newest first.
 Get a single event by ID.
 
 #### POST `/api/events/create`
-Create a new event.
+Create a new event. **Only Head users can create events.**
+
+The request must include one of `created_by_email`, `created_by_user_id`, or `created_by`. The backend checks the `Volunteers` table for a matching user with `role = 'head'`.
 
 **Request Body:**
 ```json
@@ -157,11 +159,12 @@ Create a new event.
   "volunteer_limit": 30,
   "waitlist_limit": 0,
   "status": "upcoming",
-  "image_url": "https://..."
+  "image_url": "https://...",
+  "created_by_email": "head@example.com"
 }
 ```
 
-**Response:**
+**Response (success):**
 ```json
 {
   "success": true,
@@ -169,14 +172,35 @@ Create a new event.
 }
 ```
 
+**Response (not a Head):**
+```json
+{
+  "success": false,
+  "error": "Only Head users can create events"
+}
+```
+
+### Creating a Head User
+
+To create events, a user must have a row in the `Volunteers` table with `role = 'head'`.
+
+Example SQL:
+```sql
+INSERT INTO "Volunteers" (user_id, full_name, email, role, approval_status)
+VALUES ('<auth-user-uuid>', 'Head User', 'head@example.com', 'head', 'approved');
+```
+
 ## Frontend Integration
 
 The frontend at `../frontend/` calls these API endpoints from:
 - `js/index.js` - landing page signup/login
 - `app.html` inline script - events listing and volunteer dashboard
+- `head-dashboard.html` - Head dashboard, including event creation
 - `js/app.js` - legacy app logic (kept for compatibility)
 
 Make sure the backend is running before using the frontend.
+
+**Note on security:** The current event-creation authorization checks the requester's email/user_id against the `Volunteers` table. For production, replace this with JWT/session-based authentication.
 
 ## Database
 
