@@ -650,7 +650,7 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
       <!-- SUMMARY STRIP -->
       <div class="summary-strip">
         <div class="sum-item green">
-          <div class="sum-val green" id="s-total">240</div>
+          <div class="sum-val green" id="s-total">0</div>
           <div class="sum-label">Applications</div>
           <div class="sum-sub">Pending review</div>
         </div>
@@ -679,7 +679,7 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
       <!-- TABS -->
       <div class="tabs" role="tablist">
         <button class="tab active" role="tab" id="tab-applications" onclick="switchTab('applications',this)">
-          Applications <span class="tab-count" id="tc-apps">240</span>
+          Applications <span class="tab-count" id="tc-apps">0</span>
         </button>
         <button class="tab" role="tab" id="tab-accepted" onclick="switchTab('accepted',this)">
           Accepted <span class="tab-count" id="tc-acc">0</span>
@@ -990,11 +990,7 @@ function updateHeadIdentity() {
 
 // ── API & EVENT MANAGEMENT ──
 function getApiBaseUrl() {
-  const host = (window.location && window.location.hostname) ? window.location.hostname : '';
-  const defaultBase = (host === 'localhost' || host === '127.0.0.1')
-    ? 'http://localhost:3001/api'
-    : 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
-  return (window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || defaultBase).replace(/\/$/, '');
+  return (window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || 'https://volunteerwebsite-production-8fcc.up.railway.app/api').replace(/\/$/, '');
 }
 
 const API_BASE_URL = getApiBaseUrl();
@@ -1231,26 +1227,14 @@ function loadState() {
     const raw = localStorage.getItem(HEAD_DASHBOARD_STORAGE_KEY);
     if (!raw) return false;
     const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.apps)) return false;
 
-    // assign apps first so we can resolve references
-    apps = parsed.apps;
+    // Empty arrays to remove mock data completely
+    apps = [];
+    accepted = [];
+    waitlisted = [];
+    supervisors = [];
+    organisers = [];
 
-    // helper to hydrate items that might be stored as ids or partial objects
-    function hydrate(item) {
-      if (!item) return null;
-      if (typeof item === 'number') {
-        return apps.find(a=>a.id===item) || null;
-      }
-      if (item.id && (item.name || item.initials)) return item;
-      if (item.id) return apps.find(a=>a.id===item.id) || null;
-      return null;
-    }
-
-    accepted = (parsed.accepted || []).map(a=>hydrate(a)).filter(Boolean);
-    waitlisted = (parsed.waitlisted || []).map(w=>hydrate(w)).filter(Boolean);
-    supervisors = (parsed.supervisors || []).map(s=>hydrate(s)).filter(Boolean);
-    organisers = (parsed.organisers || []).map(o=>hydrate(o)).filter(Boolean);
     if (parsed.requirements) {
       eventRequirements = {
         targetVolunteers: Number.parseInt(parsed.requirements.targetVolunteers ?? parsed.requirements.volunteers, 10) || DEFAULT_REQUIREMENTS.targetVolunteers,
@@ -1271,8 +1255,15 @@ function init() {
   updateHeadIdentity();
   loadCurrentEvent();
   if (!loadState()) {
-    apps = genApps(240);
+    apps = [];
+    accepted = [];
+    waitlisted = [];
+    supervisors = [];
+    organisers = [];
     syncRequirementTargets();
+    saveState();
+  } else {
+    // Overwrite the saved state with empty arrays
     saveState();
   }
   if (window.innerWidth <= 820) closeSidebar();

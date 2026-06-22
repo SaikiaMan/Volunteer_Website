@@ -109,9 +109,14 @@ async function getEvents(req, res, supabase) {
         });
     }
 }
-
 async function createEvent(req, res, supabase) {
     try {
+        console.log('================================');
+        console.log('POST /events/create received');
+        console.log('REQUEST BODY:');
+        console.log(JSON.stringify(req.body, null, 2));
+        console.log('================================');
+
         const {
             title,
             description,
@@ -143,9 +148,12 @@ async function createEvent(req, res, supabase) {
             });
         }
 
-        // Authorization: only Head users can create events
+        // Authorization
         const headIdentifier = created_by_email || created_by_user_id || created_by;
         const isHead = await isHeadUser(supabase, headIdentifier);
+
+        console.log('HEAD IDENTIFIER:', headIdentifier);
+        console.log('IS HEAD:', isHead);
 
         if (!isHead) {
             return res.status(403).json({
@@ -162,34 +170,66 @@ async function createEvent(req, res, supabase) {
             start_time: start_time || null,
             end_time: end_time || null,
             salary: salary != null ? Number(salary) : 0,
-            volunteer_limit: volunteer_limit != null ? Number(volunteer_limit) : (slots != null ? Number(slots) : 0),
-            waitlist_limit: waitlist_limit != null ? Number(waitlist_limit) : 0,
-            accepted_count: accepted_count != null ? Number(accepted_count) : (filledSlots != null ? Number(filledSlots) : 0),
-            waitlist_count: waitlist_count != null ? Number(waitlist_count) : 0,
+            volunteer_limit:
+                volunteer_limit != null
+                    ? Number(volunteer_limit)
+                    : (slots != null ? Number(slots) : 0),
+            waitlist_limit:
+                waitlist_limit != null
+                    ? Number(waitlist_limit)
+                    : 0,
+            accepted_count:
+                accepted_count != null
+                    ? Number(accepted_count)
+                    : (filledSlots != null ? Number(filledSlots) : 0),
+            waitlist_count:
+                waitlist_count != null
+                    ? Number(waitlist_count)
+                    : 0,
             status: status || 'upcoming',
-            image_url: image_url || image || 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&q=80&auto=format&fit=crop'
+            image_url:
+                image_url ||
+                image ||
+                'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&q=80&auto=format&fit=crop'
         };
+
+        console.log('EVENT DATA TO INSERT:');
+        console.log(JSON.stringify(eventData, null, 2));
 
         const { data, error } = await supabase
             .from('Events')
             .insert([eventData])
             .select();
 
-        if (error) throw error;
+        if (error) {
+            console.error('SUPABASE INSERT ERROR:');
+            console.error(JSON.stringify(error, null, 2));
+
+            return res.status(500).json({
+                success: false,
+                error: error.message,
+                details: error
+            });
+        }
+
+        console.log('EVENT CREATED SUCCESSFULLY');
+        console.log(JSON.stringify(data, null, 2));
 
         res.status(201).json({
             success: true,
             data: normalizeEvent(data[0])
         });
+
     } catch (err) {
-        console.error('createEvent error:', err);
+        console.error('CREATE EVENT EXCEPTION:');
+        console.error(err);
+
         res.status(500).json({
             success: false,
             error: err.message
         });
     }
 }
-
 async function getEventById(req, res, supabase) {
     try {
         const { id } = req.params;

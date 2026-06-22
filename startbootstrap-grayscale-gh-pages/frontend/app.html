@@ -436,14 +436,12 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 </section></div>
 <div class="toast" id="toast">  <div class="toast-dot" id="toast-dot"></div>  <span id="toast-msg"></span></div>
 <script>
-// Ensure API base is available on this page
+// Ensure API
+// s available on this page
 function normalizeApiBaseUrl(value) {
     const trimmedValue = String(value || '').trim();
     if (!trimmedValue) {
-        const host = (window.location && window.location.hostname) ? window.location.hostname : '';
-        return (host === 'localhost' || host === '127.0.0.1')
-            ? 'http://localhost:3001/api'
-            : 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
+        return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
     }
     if (/^https?:\/\//i.test(trimmedValue)) {
         return trimmedValue.replace(/\/$/, '');
