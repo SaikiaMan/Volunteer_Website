@@ -321,6 +321,109 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 .shell-coming h2 { font-family:var(--serif); font-size:42px; letter-spacing:-1px; margin-bottom:10px; }
 .shell-coming p { color:var(--muted2); font-size:14px; line-height:1.7; }
 @media(max-width:900px){ .app-shell-bar { flex-wrap:wrap; } .shell-grid { grid-template-columns:1fr; } .shell-title { font-size:34px; } }
+#shell-events {
+    padding: 0;
+}
+
+.shell-events-layout {
+    display: flex;
+    min-height: calc(100vh - 88px);
+}
+
+.shell-events-sidebar {
+    width: 250px;
+    position: fixed;
+    top: 88px;
+    left: 0;
+    bottom: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 30px 24px;
+    z-index: 75;
+    display: flex;
+    flex-direction: column;
+}
+
+.shell-sidebar-title {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted2);
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--muted3);
+    padding: 10px 14px;
+    font: 500 13px var(--sans);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.18s ease;
+    margin-bottom: 4px;
+    border: 1px solid transparent;
+}
+
+.sidebar-link:hover {
+    background: var(--surface2);
+    color: var(--white);
+}
+
+.sidebar-link.active {
+    background: var(--green-dim);
+    color: var(--green);
+    border-color: rgba(29, 255, 143, 0.15);
+    font-weight: 600;
+}
+
+.shell-events-main {
+    flex-grow: 1;
+    margin-left: 250px;
+    padding: 30px 40px;
+}
+
+.shell-events-main .shell-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+@media(max-width:900px) {
+    .shell-events-layout {
+        flex-direction: column;
+    }
+    .shell-events-sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        flex-direction: row;
+        align-items: center;
+        overflow-x: auto;
+        gap: 8px;
+        padding: 12px 16px;
+        z-index: 1;
+    }
+    .shell-sidebar-title {
+        display: none;
+    }
+    .sidebar-link {
+        margin-bottom: 0;
+        white-space: nowrap;
+        width: auto;
+        padding: 8px 14px;
+    }
+    .shell-events-main {
+        margin-left: 0;
+        padding: 20px 16px;
+    }
+}
 </style>
 <style>
 /* Mobile performance tweaks */
@@ -373,15 +476,16 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
   </div>
 
   <section class="shell-panel active" id="shell-events">
-    <div class="shell-wrap">
-      <div class="shell-hero">
-        <div>
-          <div class="shell-kicker">Events</div>
-          <div class="shell-title">Browse verified opportunities</div>
-          <div class="shell-subtitle">Pick a role, review the details, and join events that match your skills.</div>
-        </div>
+    <div class="shell-events-layout">
+      <aside class="shell-events-sidebar">
+        <div class="shell-sidebar-title">Categories</div>
+        <button class="sidebar-link active" data-filter="upcoming" type="button" onclick="filterShellEvents('upcoming', this)">Upcoming Events</button>
+        <button class="sidebar-link" data-filter="active" type="button" onclick="filterShellEvents('active', this)">Active Events</button>
+        <button class="sidebar-link" data-filter="past" type="button" onclick="filterShellEvents('past', this)">Past Events</button>
+      </aside>
+      <div class="shell-events-main">
+        <div class="shell-grid"></div>
       </div>
-      <div class="shell-grid"></div>
     </div>
   </section>
 
@@ -439,6 +543,13 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 // Ensure API
 // s available on this page
 function normalizeApiBaseUrl(value) {
+    const host = (window.location && window.location.hostname) ? window.location.hostname : '';
+    const isLocal = (host === 'localhost' || host === '127.0.0.1' || host === '' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.'));
+    
+    if (isLocal) {
+        return 'http://localhost:3001/api';
+    }
+
     const trimmedValue = String(value || '').trim();
     if (!trimmedValue) {
         return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
@@ -623,6 +734,23 @@ function saveProfileHandler(btn) {
 }
 
 let shellEvents = [];
+let currentShellFilter = 'upcoming';
+
+function filterShellEvents(filterType, element) {
+    currentShellFilter = filterType;
+    
+    const links = document.querySelectorAll('.sidebar-link');
+    links.forEach(link => link.classList.remove('active'));
+    
+    if (element) {
+        element.classList.add('active');
+    } else {
+        const activeLink = document.querySelector(`.sidebar-link[data-filter="${filterType}"]`);
+        if (activeLink) activeLink.classList.add('active');
+    }
+    
+    renderShellEvents();
+}
 
 async function loadEvents() {
     const grid = document.querySelector('#shell-events .shell-grid');
@@ -638,9 +766,25 @@ async function loadEvents() {
         const data = await response.json();
         shellEvents = Array.isArray(data) ? data : (data.data || []);
         renderShellEvents();
+
+        const storedRole = (localStorage.getItem('eventeaseRole') || '').toString().toLowerCase();
+        const raw = localStorage.getItem('volunteerProfile');
+        let profileRole = '';
+        if (raw) {
+          try { profileRole = (JSON.parse(raw).role || '').toString().toLowerCase(); } catch (e) {}
+        }
+        if (storedRole !== 'head' && profileRole !== 'head') {
+            if (typeof renderEvents === 'function') {
+                renderEvents();
+            }
+            if (typeof renderEarnings === 'function') {
+                renderEarnings();
+            }
+        }
     } catch (error) {
         console.error('Failed to load events:', error);
-        grid.innerHTML = `<div class="empty" style="grid-column:1/-1;">Could not load events. <button class="topbar-btn" type="button" onclick="loadEvents()">Retry</button></div>`;
+        localStorage.setItem('lastError', error.message + '\n' + error.stack);
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1;">Could not load events: ${error.message}. <button class="topbar-btn" type="button" onclick="loadEvents()">Retry</button></div>`;
     }
 }
 
@@ -648,12 +792,21 @@ function renderShellEvents() {
     const grid = document.querySelector('#shell-events .shell-grid');
     if (!grid) return;
 
-    if (!shellEvents.length) {
+    let filtered = shellEvents;
+    if (currentShellFilter === 'upcoming') {
+        filtered = shellEvents.filter(e => String(e.status || 'upcoming').toLowerCase() === 'upcoming');
+    } else if (currentShellFilter === 'active') {
+        filtered = shellEvents.filter(e => String(e.status || '').toLowerCase() === 'active');
+    } else if (currentShellFilter === 'past') {
+        filtered = shellEvents.filter(e => ['past', 'completed', 'cancelled'].includes(String(e.status || '').toLowerCase()));
+    }
+
+    if (!filtered.length) {
         grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">No events available yet.</div>';
         return;
     }
 
-    grid.innerHTML = shellEvents.map(event => createShellEventCard(event)).join('');
+    grid.innerHTML = filtered.map(event => createShellEventCard(event)).join('');
 }
 
 function createShellEventCard(event) {
@@ -687,22 +840,42 @@ function createShellEventCard(event) {
     const safeTitle = String(event.title || 'Untitled Event').replace(/'/g, "\\'");
     const imageUrl = event.image_url || event.image || '';
 
+    const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
+    const hasApplied = applications.some(app => app.eventId === event.id);
+    const btnText = hasApplied ? 'Applied' : 'Apply Now';
+    const btnDisabled = hasApplied ? 'disabled' : '';
+
+    const categoryText = (event.category && String(event.category).toLowerCase() !== 'upcoming')
+        ? event.category
+        : (event.status && String(event.status).toLowerCase() !== 'upcoming')
+            ? event.status
+            : '';
+
+    // Check if the logged-in user is a Head
+    const storedRole = (localStorage.getItem('eventeaseRole') || '').toString().toLowerCase();
+    const rawProfile = localStorage.getItem('volunteerProfile');
+    let profileRole = '';
+    if (rawProfile) {
+      try { profileRole = (JSON.parse(rawProfile).role || '').toString().toLowerCase(); } catch (e) {}
+    }
+    const isHead = (storedRole === 'head' || profileRole === 'head');
+
     return `
         <div class="shell-card">
             <img src="${imageUrl}" alt="${event.title || ''}" class="shell-card-image" onerror="this.style.display='none'">
             <div class="shell-card-body">
                 <div class="shell-event-meta">
-                    <span style="color:${accent};text-transform:uppercase;font-size:11px;letter-spacing:.5px;">${event.category || event.status || 'Event'}</span>
+                    ${categoryText ? `<span style="color:${accent};text-transform:uppercase;font-size:11px;letter-spacing:.5px;">${categoryText}</span>` : ''}
                     <span>${formattedDate}${timeRange ? ' · ' + timeRange : ''}</span>
                 </div>
                 <div class="shell-event-title">${event.title || 'Untitled Event'}</div>
                 <div class="shell-event-desc">${event.description || event.location || ''}</div>
                 <div class="shell-event-meta" style="margin-bottom:14px; flex-wrap:wrap;">
-                    <span>📍 ${event.location || 'Location TBD'}</span>
-                    <span>💰 ₹${salary}</span>
-                    <span>🎫 ${availableSlots} of ${volunteerLimit} spots left</span>
+                    <span>${event.location || 'Location TBD'}</span>
+                    <span>₹${salary}</span>
+                    <span>${availableSlots} of ${volunteerLimit} spots left</span>
                 </div>
-                <button class="shell-event-btn" type="button" onclick="applyForEvent(${event.id}, '${safeTitle}', this)">Apply Now</button>
+                ${isHead ? '' : `<button class="shell-event-btn" type="button" ${btnDisabled} onclick="applyForEvent(${event.id}, '${safeTitle}', this)">${btnText}</button>`}
             </div>
         </div>
     `;
@@ -729,6 +902,30 @@ async function applyForEvent(eventId, eventTitle, btn) {
             localStorage.setItem('stafflyApplications', JSON.stringify(applications));
         }
 
+        // Sync with head dashboard state so head user sees the application
+        const HEAD_DASHBOARD_STORAGE_KEY = 'eventeaseHeadDashboardState';
+        const headState = JSON.parse(localStorage.getItem(HEAD_DASHBOARD_STORAGE_KEY) || '{}');
+        if (!headState.apps) headState.apps = [];
+
+        const volunteerId = VOL.id || VOL.user_id || 999;
+        const fullName = [VOL.fn, VOL.ln].filter(Boolean).join(' ').trim() || 'Volunteer';
+        const initials = fullName.split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'V';
+
+        if (!headState.apps.find(a => a.id === volunteerId)) {
+            headState.apps.push({
+                id: volunteerId,
+                name: fullName,
+                initials: initials,
+                age: VOL.age || 20,
+                location: VOL.loc || VOL.location || 'Unknown',
+                events: 0,
+                rating: PROFILE.rating || 5.0,
+                status: 'pending',
+                eventId: eventId
+            });
+            localStorage.setItem(HEAD_DASHBOARD_STORAGE_KEY, JSON.stringify(headState));
+        }
+
         showToast(`Applied for "${eventTitle}"!`, 'var(--green)');
         if (btn) {
             btn.textContent = 'Applied';
@@ -752,7 +949,6 @@ function init() {
   renderEvents();
   renderEarnings();
   updateTopbarAuthButtons();
-  loadEvents();
 }
 
 function hydrateProfile() {
@@ -815,8 +1011,244 @@ function renderExpEdit() { document.getElementById('exp-edit-list').innerHTML = 
 function upExp(id, f, v) { const e = EXPS.find(x => x.id === id); if (e) e[f] = v; }
 function rmExp(id) { EXPS = EXPS.filter(x => x.id !== id); renderExpEdit(); renderExpDisplay(); showToast('Experience entry removed', 'var(--muted3)'); }
 function addExp() { expSeq++; EXPS.push({ id:expSeq, role:'', org:'', date:'', desc:'' }); renderExpEdit(); document.getElementById('exp-edit-list').lastElementChild?.scrollIntoView({ behavior:'smooth' }); }
-function renderEvents() { document.getElementById('ev-list').innerHTML = '<div class="empty">No events yet.</div>'; }
-function renderEarnings() { document.getElementById('earn-summary').innerHTML = `<div class="earn-block amber"><div class="earn-val amber">₹0</div><div class="earn-label">Total Earned</div><div class="earn-sub">Lifetime earnings</div></div><div class="earn-block green"><div class="earn-val green">0</div><div class="earn-label">Hours Logged</div><div class="earn-sub">Across 0 completed events</div></div><div class="earn-block blue"><div class="earn-val blue">—</div><div class="earn-label">Avg. Per Event</div><div class="earn-sub">Based on completed</div></div>`; document.getElementById('bars-row').innerHTML = MONTHLY[activePeriod].map(d => `<div class="bar-col"><div class="bar-track" style="height:80px"><div class="bar-fill" style="height:0%" data-val="₹0"></div></div><div class="bar-label">${d.m}</div></div>`).join(''); document.getElementById('chart-total').textContent = '₹0'; document.getElementById('earn-breakdown').innerHTML = '<div class="empty">No earnings yet.</div>'; document.getElementById('s-earn').textContent = '₹0'; document.getElementById('s-hours').textContent = '0'; document.getElementById('s-applied').textContent = '0'; document.querySelectorAll('.sum-sub').forEach((el, index) => { if (index === 0) el.textContent = '+0 this month'; if (index === 1) el.textContent = 'Lifetime earnings'; if (index === 2) el.textContent = '0 reviews'; if (index === 3) el.textContent = 'Across 0 events'; }); }
+function renderEvents() {
+  const evList = document.getElementById('ev-list');
+  if (!evList) return;
+
+  const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
+  if (!applications.length) {
+    evList.innerHTML = '<div class="empty">No events applied yet.</div>';
+    document.getElementById('nb-events').textContent = '0';
+    document.getElementById('tc-events').textContent = '0';
+    document.getElementById('s-applied').textContent = '0';
+    return;
+  }
+
+  // Load head dashboard state to get status updates
+  const HEAD_DASHBOARD_STORAGE_KEY = 'eventeaseHeadDashboardState';
+  const headState = JSON.parse(localStorage.getItem(HEAD_DASHBOARD_STORAGE_KEY) || '{}');
+  const acceptedList = headState.accepted || [];
+  const waitlistedList = headState.waitlisted || [];
+  const supervisorsList = headState.supervisors || [];
+  const organisersList = headState.organisers || [];
+  const appsList = headState.apps || [];
+  const volunteerId = VOL.id || VOL.user_id || '';
+
+  const appliedEvents = [];
+  applications.forEach(app => {
+    const event = shellEvents.find(e => e.id === app.eventId);
+    if (!event) return;
+
+    let status = 'pending';
+    if (supervisorsList.some(s => s.id === volunteerId && Number(s.eventId) === Number(app.eventId))) {
+      status = 'supervisor';
+    } else if (organisersList.some(o => o.id === volunteerId && Number(o.eventId) === Number(app.eventId))) {
+      status = 'organiser';
+    } else if (acceptedList.some(a => a.id === volunteerId && Number(a.eventId) === Number(app.eventId))) {
+      status = 'accepted';
+    } else if (waitlistedList.some(w => w.id === volunteerId && Number(w.eventId) === Number(app.eventId))) {
+      status = 'pending';
+    } else {
+      const appRecord = appsList.find(a => a.id === volunteerId && Number(a.eventId) === Number(app.eventId));
+      if (appRecord) {
+        status = appRecord.status || 'pending';
+      }
+    }
+
+    appliedEvents.push({
+      ...event,
+      appStatus: status,
+      appliedAt: app.appliedAt
+    });
+  });
+
+  // Apply search query
+  const query = document.getElementById('ev-search')?.value.trim().toLowerCase() || '';
+  let filtered = appliedEvents;
+  if (query) {
+    filtered = filtered.filter(e => 
+      String(e.title || '').toLowerCase().includes(query) || 
+      String(e.location || '').toLowerCase().includes(query) || 
+      String(e.description || '').toLowerCase().includes(query)
+    );
+  }
+
+  // Apply status filter
+  const statusFilter = document.getElementById('ev-filter')?.value || 'all';
+  if (statusFilter !== 'all') {
+    filtered = filtered.filter(e => e.appStatus === statusFilter);
+  }
+
+  // Update badge and Overview counts
+  const count = appliedEvents.length;
+  document.getElementById('nb-events').textContent = count;
+  document.getElementById('tc-events').textContent = count;
+  document.getElementById('s-applied').textContent = count;
+
+  if (!filtered.length) {
+    evList.innerHTML = '<div class="empty">No matching events found.</div>';
+    return;
+  }
+
+  evList.innerHTML = filtered.map(event => {
+    const rawDate = event.date || event.event_date;
+    const formattedDate = rawDate
+        ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'Date TBD';
+    const salary = event.salary != null ? Number(event.salary) : 0;
+    const statusClass = AC[event.appStatus] || 'muted';
+    const statusLabel = LBL[event.appStatus] || 'Pending';
+
+    return `
+      <div class="event-row">
+        <div class="event-accent ${statusClass}"></div>
+        <div>
+          <div class="event-name">${event.title || 'Untitled Event'}</div>
+          <div class="event-meta">
+            <span>${formattedDate}</span>
+            <span>${event.location || 'Location TBD'}</span>
+            <span>₹${salary}</span>
+          </div>
+        </div>
+        <div class="event-right">
+          <span class="event-status ${statusClass}">${statusLabel}</span>
+          <span class="event-date">Applied ${new Date(event.appliedAt).toLocaleDateString()}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+function renderEarnings() {
+  if (!document.getElementById('earn-summary')) return;
+  const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
+  
+  // Load head dashboard state to check status
+  const HEAD_DASHBOARD_STORAGE_KEY = 'eventeaseHeadDashboardState';
+  const headState = JSON.parse(localStorage.getItem(HEAD_DASHBOARD_STORAGE_KEY) || '{}');
+  const acceptedList = headState.accepted || [];
+  const supervisorsList = headState.supervisors || [];
+  const organisersList = headState.organisers || [];
+  const volunteerId = VOL.id || VOL.user_id || '';
+
+  let totalEarned = 0;
+  let totalHours = 0;
+  let completedCount = 0;
+  const earningsBreakdown = [];
+
+  // Monthly values for the chart
+  const monthlyValues = {
+    '2026': { Jan:0, Feb:0, Mar:0, Apr:0, May:0, Jun:0, Jul:0, Aug:0, Sep:0, Oct:0, Nov:0, Dec:0 },
+    '2025': { Jan:0, Feb:0, Mar:0, Apr:0, May:0, Jun:0, Jul:0, Aug:0, Sep:0, Oct:0, Nov:0, Dec:0 }
+  };
+
+  applications.forEach(app => {
+    const event = shellEvents.find(e => e.id === app.eventId);
+    if (!event) return;
+
+    let isEarnedState = false;
+    if (supervisorsList.some(s => s.id === volunteerId && Number(s.eventId) === Number(app.eventId)) ||
+        organisersList.some(o => o.id === volunteerId && Number(o.eventId) === Number(app.eventId)) ||
+        acceptedList.some(a => a.id === volunteerId && Number(a.eventId) === Number(app.eventId))) {
+      isEarnedState = true;
+    }
+
+    if (isEarnedState) {
+      const salary = Number(event.salary || 0);
+      totalEarned += salary;
+      
+      // Calculate hours from start_time and end_time
+      let hours = 8; // Default
+      if (event.start_time && event.end_time) {
+        try {
+          const [sh, sm] = event.start_time.split(':').map(Number);
+          const [eh, em] = event.end_time.split(':').map(Number);
+          const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+          if (diffMin > 0) hours = Math.round((diffMin / 60) * 10) / 10;
+        } catch (e) {}
+      }
+      totalHours += hours;
+      completedCount++;
+
+      // Map to monthly chart
+      const rawDate = event.date || event.event_date;
+      if (rawDate) {
+        const dObj = new Date(rawDate);
+        const year = String(dObj.getFullYear());
+        const monthShort = dObj.toLocaleString('en-US', { month: 'short' });
+        if (monthlyValues[year] && monthlyValues[year][monthShort] !== undefined) {
+          monthlyValues[year][monthShort] += salary;
+        }
+      }
+
+      earningsBreakdown.push({
+        title: event.title,
+        date: rawDate ? new Date(rawDate).toLocaleDateString() : 'TBD',
+        salary
+      });
+    }
+  });
+
+  const avgPerEvent = completedCount ? Math.round(totalEarned / completedCount) : 0;
+
+  // Update Overview metrics
+  document.getElementById('s-earn').textContent = '₹' + totalEarned.toLocaleString();
+  document.getElementById('s-hours').textContent = totalHours;
+
+  // Update Summary Blocks in Earnings Panel
+  document.getElementById('earn-summary').innerHTML = `
+    <div class="earn-block amber">
+      <div class="earn-val amber">₹${totalEarned.toLocaleString()}</div>
+      <div class="earn-label">Total Earned</div>
+      <div class="earn-sub">Lifetime earnings</div>
+    </div>
+    <div class="earn-block green">
+      <div class="earn-val green">${totalHours}</div>
+      <div class="earn-label">Hours Logged</div>
+      <div class="earn-sub">Across ${completedCount} active events</div>
+    </div>
+    <div class="earn-block blue">
+      <div class="earn-val blue">${avgPerEvent ? '₹' + avgPerEvent.toLocaleString() : '—'}</div>
+      <div class="earn-label">Avg. Per Event</div>
+      <div class="earn-sub">Based on active applications</div>
+    </div>
+  `;
+
+  // Populate dynamic MONTHLY values
+  for (const yr in monthlyValues) {
+    if (MONTHLY[yr]) {
+      MONTHLY[yr] = Object.entries(monthlyValues[yr]).map(([m, v]) => ({ m, v }));
+    }
+  }
+
+  // Render bars for active period
+  renderBars(activePeriod);
+
+  // Render Breakdown List
+  const breakdownEl = document.getElementById('earn-breakdown');
+  if (breakdownEl) {
+    if (!earningsBreakdown.length) {
+      breakdownEl.innerHTML = '<div class="empty">No earnings history yet.</div>';
+    } else {
+      breakdownEl.innerHTML = earningsBreakdown.map(item => `
+        <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:500; font-size:13px">${item.title}</div>
+            <div style="font-size:11px; color:var(--muted2)">Completed on ${item.date}</div>
+          </div>
+          <div style="color:var(--amber); font-weight:500; font-size:13px">+ ₹${item.salary.toLocaleString()}</div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // Update Overview summary subtitles
+  document.querySelectorAll('.sum-sub').forEach((el, index) => {
+    if (index === 0) el.textContent = `+${completedCount} this month`;
+    if (index === 1) el.textContent = 'Lifetime earnings';
+    if (index === 2) el.textContent = '0 reviews';
+    if (index === 3) el.textContent = `Across ${completedCount} completed events`;
+  });
+}
 function renderBars(yr) { const data = MONTHLY[yr]; const max = Math.max(...data.map(d => d.v), 1); const tot = data.reduce((s,d) => s + d.v, 0); document.getElementById('chart-total').textContent = '₹' + tot.toLocaleString(); document.getElementById('bars-row').innerHTML = data.map(d => { const pct = Math.round((d.v / max) * 100); return `<div class="bar-col"><div class="bar-track" style="height:80px"><div class="bar-fill ${d.v > 0 ? 'has-val' : ''}" style="height:${Math.max(pct, d.v > 0 ? 3 : 0)}%" data-val="₹${d.v.toLocaleString()}"></div></div><div class="bar-label">${d.m}</div></div>`; }).join(''); }
 function setPeriod(yr, btn) { activePeriod = yr; document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderBars(yr); }
 function saveProfile() { VOL.fn = document.getElementById('f-fn').value.trim(); VOL.ln = document.getElementById('f-ln').value.trim(); VOL.age = parseInt(document.getElementById('f-age').value) || VOL.age; VOL.loc = document.getElementById('f-loc').value.trim(); VOL.email = document.getElementById('f-email').value.trim(); VOL.phone = document.getElementById('f-phone').value.trim(); VOL.about = document.getElementById('f-about').value.trim(); VOL.skills = document.getElementById('f-skills').value.split(',').map(s => s.trim()).filter(Boolean); VOL.experience = EXPS.map(entry => ({ role: entry.role, org: entry.org, date: entry.date, desc: entry.desc })); const full = [VOL.fn, VOL.ln].filter(Boolean).join(' ').trim(); VOL.fullName = full; VOL.full_name = full; localStorage.setItem('volunteerProfile', JSON.stringify(VOL)); Object.assign(PROFILE, { fn: VOL.fn, ln: VOL.ln, age: VOL.age, loc: VOL.loc, email: VOL.email, phone: VOL.phone, about: VOL.about, skills: VOL.skills, rating: PROFILE.rating, ratingCount: PROFILE.ratingCount, photoUrl: getProfilePhotoUrl(VOL) }); const init = (VOL.fn[0] || '') + (VOL.ln[0] || ''); document.getElementById('p-name').textContent = full || ''; document.getElementById('p-handle').textContent = VOL.email || 'N/A'; document.getElementById('p-about').textContent = VOL.about || 'No description provided.'; document.getElementById('pm-age').textContent = VOL.age || 'N/A'; document.getElementById('pm-loc').textContent = VOL.loc || 'N/A'; document.getElementById('pm-since').textContent = formatMemberSince(VOL); document.getElementById('sb-name').textContent = full || ''; document.getElementById('sb-role').textContent = full || ''; setAvatarContent('pav-display', getProfilePhotoUrl(VOL), init.toUpperCase() || 'V', full || 'Volunteer'); setAvatarContent('sb-initials', getProfilePhotoUrl(VOL), init.toUpperCase() || 'V', full || 'Volunteer'); setEditPhotoPreview(getProfilePhotoUrl(VOL), init.toUpperCase() || 'V', full || 'Volunteer'); renderSkills(); renderExpDisplay(); renderExpEdit(); showToast('Profile saved successfully', 'var(--green)'); switchTab('overview', null); }

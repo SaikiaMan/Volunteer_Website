@@ -498,6 +498,44 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
   border: 1px dashed var(--border); border-radius: 14px; background: rgba(255,255,255,0.01);
 }
 .hidden { display: none !important; }
+.sidebar-event-link {
+  display: block;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--muted3);
+  cursor: pointer;
+  transition: all .18s;
+  border: 1px solid transparent;
+  margin-bottom: 3px;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar-event-link:hover {
+  background: var(--surface2);
+  color: var(--white);
+}
+.sidebar-event-link.active {
+  background: var(--green-dim);
+  color: var(--green);
+  border-color: rgba(29,255,143,0.15);
+  font-weight: 500;
+}
+.sidebar-nav::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 99px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: var(--muted2);
+}
 </style>
 <style>
 /* Mobile / small-screen tweaks to improve responsiveness and reduce rendering cost */
@@ -586,42 +624,28 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
 <div class="app">
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
-    <a href="#" class="sidebar-logo">
+    <a href="#" class="sidebar-logo" style="flex-shrink: 0;">
       <img src="assets/img/logo.jpeg" alt="Logo" style="height: 24px; margin-right: 8px; border-radius: 4px; vertical-align: middle;" />
       Event<em>Ease</em>
     </a>
-    <div class="sidebar-event">
+    <div class="sidebar-event" style="flex-shrink: 0;">
       <div class="sidebar-event-label">Current Event</div>
       <div class="sidebar-event-name" id="currentEventName">Loading...</div>
       <div class="sidebar-event-date" id="currentEventDate">—</div>
       <button class="topbar-btn primary" style="margin-top:10px;width:100%;" type="button" onclick="openCreateEventModal()">+ Create Event</button>
     </div>
-    <nav class="sidebar-nav">
-      <span class="nav-group-label">Dashboard</span>
-      <a href="#" class="nav-item active" onclick="switchTab('applications',this)">
-        Applications
-      </a>
-      <a href="#" class="nav-item" onclick="switchTab('accepted',this)">
-        Accepted
-      </a>
-      <a href="#" class="nav-item" onclick="switchTab('supervisors',this)">
-        Supervisors
-      </a>
-      <a href="#" class="nav-item" onclick="switchTab('organisers',this)">
-        Organisers
-      </a>
-      <a href="#" class="nav-item" onclick="switchTab('waitlist',this)">
-        Waitlist
-      </a>
-      <!-- Event group removed: Analytics / Messages / Settings -->
+    <div style="padding: 12px 20px 4px 20px; flex-shrink: 0;">
+      <div class="nav-group-label" style="margin-bottom: 0;">All Events</div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarEventsList">
     </nav>
-    <div style="padding:12px 16px;">
+    <div style="padding:12px 16px; flex-shrink: 0;">
       <div class="nav-group-label" style="margin-bottom:8px">Actions</div>
       <div style="display:flex;gap:8px;">
         <button id="sidebar-complete-assignment" class="topbar-btn primary" onclick="completeAssignment()">Complete assignment</button>
       </div>
     </div>
-    <div class="sidebar-footer">
+    <div class="sidebar-footer" style="flex-shrink: 0;">
       <div class="avatar-sm">RK</div>
       <div>
         <div class="footer-name">Rahul Kumar</div>
@@ -639,8 +663,6 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
         <div class="breadcrumb">EventEase <span>/</span> <span id="topbar-title-txt">Applications</span></div>
       </div>
       <div class="topbar-right">
-        <button class="topbar-btn" onclick="openRequirementsModal()">Config changes</button>
-        <button class="topbar-btn primary">Export CSV</button>
       </div>
     </header>
 
@@ -804,41 +826,6 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
   </div>
 </div>
 
-  <!-- REQUIREMENTS MODAL -->
-  <div class="modal-overlay" id="requirements-overlay" onclick="maybeCloseRequirements(event)">
-    <div class="modal requirements-modal" role="dialog" aria-modal="true">
-      <div class="modal-head">
-        <div>
-          <div class="modal-title">Set Event Requirements</div>
-          <div class="modal-sub">Choose target volunteers, supervisors, and organisers for this event</div>
-        </div>
-        <button class="modal-close" onclick="closeRequirementsModal()">Close</button>
-      </div>
-      <form class="requirements-form" onsubmit="saveRequirements(event)">
-        <div class="requirements-grid-form">
-          <div class="requirements-field">
-            <label for="req-target-volunteers-input">Target Volunteers</label>
-            <input id="req-target-volunteers-input" type="number" min="1" step="1" required>
-          </div>
-          <div class="requirements-field">
-            <label for="req-supervisors-input">Supervisors</label>
-            <input id="req-supervisors-input" type="number" min="0" step="1" required>
-          </div>
-          <div class="requirements-field">
-            <label for="req-organisers-input">Organisers</label>
-            <input id="req-organisers-input" type="number" min="0" step="1" required>
-          </div>
-        </div>
-        <div class="requirements-note">
-          These counts replace the target volunteers, supervisors, and organisers for this event.
-        </div>
-        <div class="requirements-actions">
-          <button type="button" class="modal-close" onclick="closeRequirementsModal()">Skip for now</button>
-          <button type="submit" class="btn-confirm">Save Requirements</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
 <!-- CREATE EVENT MODAL -->
 <div class="modal-overlay" id="createEventOverlay" onclick="maybeCloseCreateEvent(event)">
@@ -990,6 +977,11 @@ function updateHeadIdentity() {
 
 // ── API & EVENT MANAGEMENT ──
 function getApiBaseUrl() {
+  const host = (window.location && window.location.hostname) ? window.location.hostname : '';
+  const isLocal = (host === 'localhost' || host === '127.0.0.1' || host === '' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.'));
+  if (isLocal) {
+    return 'http://localhost:3001/api';
+  }
   return (window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || 'https://volunteerwebsite-production-8fcc.up.railway.app/api').replace(/\/$/, '');
 }
 
@@ -1086,30 +1078,95 @@ async function saveCreateEvent(e) {
   }
 }
 
+let allEvents = [];
+let selectedEventId = null;
+
+function getEventStorageKey(eventId) {
+  return `eventeaseHeadDashboardState_${eventId}`;
+}
+
+function renderSidebarEvents(events) {
+  const el = document.getElementById('sidebarEventsList');
+  if (!el) return;
+  if (!Array.isArray(events) || events.length === 0) {
+    el.innerHTML = '<div style="padding:8px 12px; font-size:12px; color:var(--muted2);">No events found</div>';
+    return;
+  }
+  el.innerHTML = events.map(e => {
+    const isActive = (selectedEventId && Number(e.id) === Number(selectedEventId)) ? 'active' : '';
+    return `<div class="sidebar-event-link ${isActive}" onclick="selectEvent(${e.id})">${e.title || 'Untitled Event'}</div>`;
+  }).join('');
+}
+
+async function selectEvent(eventId) {
+  if (selectedEventId) {
+    saveStateForEvent(selectedEventId);
+  }
+
+  selectedEventId = eventId;
+  localStorage.setItem('eventeaseSelectedEventId', eventId);
+
+  const evt = allEvents.find(e => Number(e.id) === Number(eventId));
+  if (evt) {
+    const nameEl = document.getElementById('currentEventName');
+    const dateEl = document.getElementById('currentEventDate');
+    if (nameEl) nameEl.textContent = evt.title || 'Untitled Event';
+    if (dateEl) {
+      const rawDate = evt.date || evt.event_date;
+      const formattedDate = rawDate
+        ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'Date TBD';
+      dateEl.textContent = `${formattedDate}${evt.location ? ', ' + evt.location : ''}`;
+    }
+  }
+
+  loadStateForEvent(eventId);
+  renderSidebarEvents(allEvents);
+  renderAll();
+}
+
 async function loadCurrentEvent() {
   try {
     const response = await fetch(`${API_BASE_URL}/events/list`);
     if (!response.ok) throw new Error('Failed to fetch events');
     const events = await response.json();
-    const latest = Array.isArray(events) && events.length > 0 ? events[0] : null;
+    allEvents = Array.isArray(events) ? events : [];
+
+    let storedId = localStorage.getItem('eventeaseSelectedEventId');
+    if (storedId && allEvents.some(e => Number(e.id) === Number(storedId))) {
+      selectedEventId = Number(storedId);
+    } else if (allEvents.length > 0) {
+      selectedEventId = Number(allEvents[0].id);
+      localStorage.setItem('eventeaseSelectedEventId', selectedEventId);
+    } else {
+      selectedEventId = null;
+    }
+
+    renderSidebarEvents(allEvents);
 
     const nameEl = document.getElementById('currentEventName');
     const dateEl = document.getElementById('currentEventDate');
 
     if (!nameEl || !dateEl) return;
 
-    if (!latest) {
+    if (!selectedEventId) {
       nameEl.textContent = 'No event created yet';
       dateEl.textContent = 'Click "Create Event" to add one';
       return;
     }
 
-    nameEl.textContent = latest.title || 'Untitled Event';
-    const rawDate = latest.date || latest.event_date;
-    const formattedDate = rawDate
-      ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      : 'Date TBD';
-    dateEl.textContent = `${formattedDate}${latest.location ? ', ' + latest.location : ''}`;
+    const currentEvent = allEvents.find(e => Number(e.id) === Number(selectedEventId));
+    if (currentEvent) {
+      nameEl.textContent = currentEvent.title || 'Untitled Event';
+      const rawDate = currentEvent.date || currentEvent.event_date;
+      const formattedDate = rawDate
+        ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'Date TBD';
+      dateEl.textContent = `${formattedDate}${currentEvent.location ? ', ' + currentEvent.location : ''}`;
+    }
+
+    loadStateForEvent(selectedEventId);
+    renderAll();
   } catch (error) {
     console.error('loadCurrentEvent error:', error);
     const nameEl = document.getElementById('currentEventName');
@@ -1150,43 +1207,10 @@ function dedupeById(arr) {
   return out;
 }
 
-function openRequirementsModal() {
-  document.getElementById('req-target-volunteers-input').value = ACCEPT_TARGET;
-  document.getElementById('req-supervisors-input').value = SUPERVISOR_TARGET;
-  document.getElementById('req-organisers-input').value = ORGANISER_TARGET;
-  document.getElementById('requirements-overlay').classList.add('open');
-}
-
-function closeRequirementsModal() {
-  document.getElementById('requirements-overlay').classList.remove('open');
-}
-
-function maybeCloseRequirements(e) {
-  if (e.target === document.getElementById('requirements-overlay')) closeRequirementsModal();
-}
-
-function saveRequirements(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  const targetVolunteers = Number.parseInt(document.getElementById('req-target-volunteers-input').value, 10);
-  const supervisorsCount = Number.parseInt(document.getElementById('req-supervisors-input').value, 10);
-  const organisersCount = Number.parseInt(document.getElementById('req-organisers-input').value, 10);
-  if (!Number.isFinite(targetVolunteers) || targetVolunteers < 1 || !Number.isFinite(supervisorsCount) || supervisorsCount < 0 || !Number.isFinite(organisersCount) || organisersCount < 0) {
-    showToast('Enter valid requirement counts', 'var(--amber)');
-    return;
-  }
-  eventRequirements = {
-    targetVolunteers,
-    supervisors: supervisorsCount,
-    organisers: organisersCount,
-    configured: true
-  };
-  syncRequirementTargets();
-  saveState();
-  updateRequirementsPanel();
-  renderAll();
-  closeRequirementsModal();
-  showToast('Event requirements saved', 'var(--green)');
-}
+function openRequirementsModal() {}
+function closeRequirementsModal() {}
+function maybeCloseRequirements(e) {}
+function saveRequirements(e) {}
 
 // Generate mock applications
 function genApps(n) {
@@ -1208,70 +1232,137 @@ function genApps(n) {
 }
 
 function saveState() {
+  if (!selectedEventId) return;
+  saveStateForEvent(selectedEventId);
+}
+
+function saveStateForEvent(eventId) {
   try {
-    localStorage.setItem(HEAD_DASHBOARD_STORAGE_KEY, JSON.stringify({
+    // 1. Save event-specific state
+    const eventState = {
       apps,
       accepted,
       waitlisted,
       supervisors,
       organisers,
       requirements: eventRequirements
-    }));
+    };
+    localStorage.setItem(getEventStorageKey(eventId), JSON.stringify(eventState));
+
+    // 2. Synchronize with global eventeaseHeadDashboardState
+    const globalRaw = localStorage.getItem('eventeaseHeadDashboardState');
+    let globalState = globalRaw ? JSON.parse(globalRaw) : {};
+    if (!globalState.apps) globalState.apps = [];
+    if (!globalState.accepted) globalState.accepted = [];
+    if (!globalState.waitlisted) globalState.waitlisted = [];
+    if (!globalState.supervisors) globalState.supervisors = [];
+    if (!globalState.organisers) globalState.organisers = [];
+
+    // Filter out old records for this event ID from global arrays
+    globalState.apps = globalState.apps.filter(a => Number(a.eventId) !== Number(eventId));
+    globalState.accepted = globalState.accepted.filter(a => Number(a.eventId) !== Number(eventId));
+    globalState.waitlisted = globalState.waitlisted.filter(a => Number(a.eventId) !== Number(eventId));
+    globalState.supervisors = globalState.supervisors.filter(a => Number(a.eventId) !== Number(eventId));
+    globalState.organisers = globalState.organisers.filter(a => Number(a.eventId) !== Number(eventId));
+
+    // Add updated records for this event ID (attaching eventId to each item)
+    apps.forEach(item => {
+      const copy = { ...item, eventId: eventId };
+      globalState.apps.push(copy);
+    });
+    accepted.forEach(item => {
+      const copy = { ...item, eventId: eventId };
+      globalState.accepted.push(copy);
+    });
+    waitlisted.forEach(item => {
+      const copy = { ...item, eventId: eventId };
+      globalState.waitlisted.push(copy);
+    });
+    supervisors.forEach(item => {
+      const copy = { ...item, eventId: eventId };
+      globalState.supervisors.push(copy);
+    });
+    organisers.forEach(item => {
+      const copy = { ...item, eventId: eventId };
+      globalState.organisers.push(copy);
+    });
+
+    localStorage.setItem('eventeaseHeadDashboardState', JSON.stringify(globalState));
   } catch (error) {
-    console.warn('Could not save head dashboard state:', error);
+    console.warn('Could not save head dashboard state for event:', eventId, error);
   }
 }
 
 function loadState() {
+  if (!selectedEventId) return false;
+  return loadStateForEvent(selectedEventId);
+}
+
+function loadStateForEvent(eventId) {
   try {
-    const raw = localStorage.getItem(HEAD_DASHBOARD_STORAGE_KEY);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw);
+    const raw = localStorage.getItem(getEventStorageKey(eventId));
+    let eventState = raw ? JSON.parse(raw) : null;
 
-    // Empty arrays to remove mock data completely
-    apps = [];
-    accepted = [];
-    waitlisted = [];
-    supervisors = [];
-    organisers = [];
-
-    if (parsed.requirements) {
-      eventRequirements = {
-        targetVolunteers: Number.parseInt(parsed.requirements.targetVolunteers ?? parsed.requirements.volunteers, 10) || DEFAULT_REQUIREMENTS.targetVolunteers,
-        supervisors: Number.parseInt(parsed.requirements.supervisors, 10) || DEFAULT_REQUIREMENTS.supervisors,
-        organisers: Number.parseInt(parsed.requirements.organisers, 10) || DEFAULT_REQUIREMENTS.organisers,
-        configured: Boolean(parsed.requirements.configured)
+    if (!eventState) {
+      eventState = {
+        apps: [],
+        accepted: [],
+        waitlisted: [],
+        supervisors: [],
+        organisers: [],
+        requirements: { ...DEFAULT_REQUIREMENTS, configured: false }
       };
+    }
+
+    // Sync volunteer applications written by volunteers to global storage key
+    const globalRaw = localStorage.getItem('eventeaseHeadDashboardState');
+    if (globalRaw) {
+      const globalState = JSON.parse(globalRaw);
+      if (Array.isArray(globalState.apps)) {
+        globalState.apps.forEach(app => {
+          if (Number(app.eventId) === Number(eventId)) {
+            const exists = eventState.apps.some(a => a.id === app.id)
+              || eventState.accepted.some(a => a.id === app.id)
+              || eventState.waitlisted.some(a => a.id === app.id)
+              || eventState.supervisors.some(a => a.id === app.id)
+              || eventState.organisers.some(a => a.id === app.id);
+            
+            if (!exists) {
+              eventState.apps.push(app);
+            }
+          }
+        });
+      }
+    }
+
+    apps = Array.isArray(eventState.apps) ? eventState.apps : [];
+    accepted = Array.isArray(eventState.accepted) ? eventState.accepted : [];
+    waitlisted = Array.isArray(eventState.waitlisted) ? eventState.waitlisted : [];
+    supervisors = Array.isArray(eventState.supervisors) ? eventState.supervisors : [];
+    organisers = Array.isArray(eventState.organisers) ? eventState.organisers : [];
+
+    if (eventState.requirements) {
+      eventRequirements = {
+        targetVolunteers: Number.parseInt(eventState.requirements.targetVolunteers ?? eventState.requirements.volunteers, 10) || DEFAULT_REQUIREMENTS.targetVolunteers,
+        supervisors: Number.parseInt(eventState.requirements.supervisors, 10) || DEFAULT_REQUIREMENTS.supervisors,
+        organisers: Number.parseInt(eventState.requirements.organisers, 10) || DEFAULT_REQUIREMENTS.organisers,
+        configured: Boolean(eventState.requirements.configured)
+      };
+    } else {
+      eventRequirements = { ...DEFAULT_REQUIREMENTS, configured: false };
     }
     syncRequirementTargets();
     return true;
   } catch (error) {
-    console.warn('Could not load head dashboard state:', error);
+    console.warn('Could not load head dashboard state for event:', eventId, error);
     return false;
   }
 }
 
-function init() {
+async function init() {
   updateHeadIdentity();
-  loadCurrentEvent();
-  if (!loadState()) {
-    apps = [];
-    accepted = [];
-    waitlisted = [];
-    supervisors = [];
-    organisers = [];
-    syncRequirementTargets();
-    saveState();
-  } else {
-    // Overwrite the saved state with empty arrays
-    saveState();
-  }
+  await loadCurrentEvent();
   if (window.innerWidth <= 820) closeSidebar();
-  renderAll();
-  updateRequirementsPanel();
-  if (currentTab === 'applications' && !eventRequirements.configured) {
-    setTimeout(openRequirementsModal, 120);
-  }
 }
 
 // ── RENDER ──
@@ -1885,7 +1976,7 @@ function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 (async function boot() {
   const ok = await enforceHeadDashboardAccess();
   if (!ok) return;
-  init();
+  await init();
 })();
 </script>
 </body>
