@@ -10,7 +10,7 @@ function normalizeApiBaseUrl(value) {
     const trimmedValue = String(value || '').trim();
 
     if (!trimmedValue) {
-        return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
+        return 'https://api.eventease.in/api';
     }
 
     if (/^https?:\/\//i.test(trimmedValue)) {
