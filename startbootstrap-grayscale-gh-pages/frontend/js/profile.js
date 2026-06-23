@@ -56,6 +56,8 @@ window.addEventListener('DOMContentLoaded', function() {
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('volunteerProfile');
+        localStorage.removeItem('eventeaseRole');
+        localStorage.removeItem('stafflyApplications');
         window.location.href = 'index.html';
     }
 }

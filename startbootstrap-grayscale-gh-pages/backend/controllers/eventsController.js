@@ -273,8 +273,198 @@ async function getEventById(req, res, supabase) {
     }
 }
 
+async function uploadEventImage(req, res, supabase) {
+    try {
+        console.log('--- EVENT IMAGE UPLOAD ---');
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'No image file provided'
+            });
+        }
+
+        const fileName = `events/${Date.now()}_${req.file.originalname}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('volunteer_photos')
+            .upload(fileName, req.file.buffer, {
+                contentType: req.file.mimetype
+            });
+
+        if (uploadError) {
+            throw new Error(`Event photo upload failed: ${uploadError.message}`);
+        }
+
+        const { data: publicData } = supabase.storage
+            .from('volunteer_photos')
+            .getPublicUrl(fileName);
+
+        console.log('Event image uploaded successfully:', publicData.publicUrl);
+
+        res.json({
+            success: true,
+            imageUrl: publicData.publicUrl
+        });
+    } catch (err) {
+        console.error('uploadEventImage error:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+}
+
+async function updateEvent(req, res, supabase) {
+    try {
+        const { id } = req.params;
+        console.log(`PUT /events/update/${id} received`);
+        console.log('REQUEST BODY:', JSON.stringify(req.body, null, 2));
+
+        const {
+            title,
+            description,
+            location,
+            event_date,
+            date,
+            start_time,
+            end_time,
+            salary,
+            volunteer_limit,
+            slots,
+            waitlist_limit,
+            status,
+            image_url,
+            image,
+            created_by_email,
+            created_by_user_id,
+            created_by
+        } = req.body;
+
+        if (!title || !location || !(event_date || date)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Title, location, and event_date are required'
+            });
+        }
+
+        const headIdentifier = created_by_email || created_by_user_id || created_by;
+        const isHead = await isHeadUser(supabase, headIdentifier);
+
+        if (!isHead) {
+            return res.status(403).json({
+                success: false,
+                error: 'Only Head users can update events'
+            });
+        }
+
+        const eventData = {
+            title,
+            description: description || '',
+            location,
+            event_date: event_date || date,
+            start_time: start_time || null,
+            end_time: end_time || null,
+            salary: salary != null ? Number(salary) : 0,
+            volunteer_limit:
+                volunteer_limit != null
+                    ? Number(volunteer_limit)
+                    : (slots != null ? Number(slots) : 0),
+            waitlist_limit:
+                waitlist_limit != null
+                    ? Number(waitlist_limit)
+                    : 0,
+            status: status || 'upcoming',
+            image_url: image_url || image || null
+        };
+
+        const { data, error } = await supabase
+            .from('Events')
+            .update(eventData)
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('SUPABASE UPDATE ERROR:', error);
+            return res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Event not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: normalizeEvent(data[0])
+        });
+
+    } catch (err) {
+        console.error('UPDATE EVENT EXCEPTION:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+}
+
+async function deleteEvent(req, res, supabase) {
+    try {
+        const { id } = req.params;
+        const headIdentifier = req.query.created_by_email || req.query.created_by || req.query.created_by_user_id;
+
+        if (!headIdentifier) {
+            return res.status(400).json({
+                success: false,
+                error: 'Head identifier is required to verify permissions'
+            });
+        }
+
+        const isHead = await isHeadUser(supabase, headIdentifier);
+        if (!isHead) {
+            return res.status(403).json({
+                success: false,
+                error: 'Only Head users can delete events'
+            });
+        }
+
+        const { data, error } = await supabase
+            .from('Events')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('SUPABASE DELETE ERROR:', error);
+            return res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Event deleted successfully',
+            data: data
+        });
+    } catch (err) {
+        console.error('DELETE EVENT EXCEPTION:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+}
+
 module.exports = {
     getEvents,
     createEvent,
-    getEventById
+    getEventById,
+    uploadEventImage,
+    updateEvent,
+    deleteEvent
 };

@@ -17,10 +17,11 @@
                             // Hide the page to prevent flashing while we check the database
                             document.documentElement.style.display = 'none';
                             
-                            const apiBase =
-                                window.API_BASE_URL ||
-                                document.documentElement.dataset.apiBaseUrl ||
-                                'https://volunteerwebsite-production-8fcc.up.railway.app/api';
+                            const host = (window.location && window.location.hostname) ? window.location.hostname : '';
+                            const isLocal = (host === 'localhost' || host === '127.0.0.1' || host === '' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.'));
+                            const apiBase = isLocal
+                                ? 'http://localhost:3001/api'
+                                : (window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || 'https://volunteerwebsite-production-8fcc.up.railway.app/api');
                             const response = await fetch(`${apiBase}/volunteers/check-email`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },

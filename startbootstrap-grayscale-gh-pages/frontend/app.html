@@ -449,6 +449,52 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
   /* Make the Back to Home compact into an arrow on mobile (text swapped by JS) */
   .app-shell-logout.mobile-arrow { font-size:18px; padding:6px 8px; width:36px; text-align:center; }
 }
+
+/* Modal overlay and dialog styles */
+.modal-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(8,8,8,0.66); backdrop-filter: blur(14px); z-index: 9999; overflow-y: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
+.modal-overlay.open { display: flex; }
+.modal { position: relative; background: linear-gradient(180deg, rgba(24,24,24,0.98), rgba(14,14,14,0.98)); border: 1px solid var(--border2); padding: 22px; border-radius: 20px; width: min(1040px, 94%); max-height: 88vh; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.72); display: flex; flex-direction: column; }
+.modal::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+}
+.modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+.modal-title { font-family: var(--serif); font-size: 28px; line-height: 1; letter-spacing: -.4px; color: var(--white); }
+.modal-sub { font-size: 12px; color: var(--muted2); margin-top: 6px; }
+.modal-close { background: var(--surface2); border: 1px solid var(--border); color: var(--white); border-radius: 999px; padding: 9px 14px; font-family: var(--sans); font-size: 12px; cursor: pointer; }
+.modal-close:hover { border-color: var(--border2); background: var(--surface3); }
+
+.requirements-modal { width: min(720px, 94%); }
+.requirements-form { display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; overflow-y: auto; padding-right: 4px; }
+.requirements-grid-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.requirements-field { display: flex; flex-direction: column; gap: 8px; }
+.requirements-field label {
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted2);
+}
+.requirements-field input {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 14px; font-family: var(--sans); font-size: 14px; color: var(--white); outline: none;
+}
+.requirements-field input:focus {
+  border-color: var(--green-mid); box-shadow: 0 0 0 3px rgba(29,255,143,0.08);
+}
+.requirements-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.btn-confirm {
+  background: var(--green); color: var(--black);
+  border: none; border-radius: 20px; padding: 10px 18px;
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all .18s;
+}
+.btn-confirm:hover { box-shadow: 0 0 18px var(--green-glow); transform: translateY(-1px); }
+.btn-confirm:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; transform: none; }
+
+body, body *, button, input, select, textarea {
+  color: #ffffff !important;
+}
+::placeholder {
+  color: #ffffff !important;
+  opacity: 0.6;
+}
 </style>
 </head>
 <body class="app-shell-events">
@@ -539,6 +585,82 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 </div>
 </section></div>
 <div class="toast" id="toast">  <div class="toast-dot" id="toast-dot"></div>  <span id="toast-msg"></span></div>
+
+<!-- EDIT EVENT MODAL -->
+<div class="modal-overlay" id="editEventOverlay" onclick="maybeCloseEditEvent(event)">
+  <div class="modal requirements-modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Edit Event</div>
+        <div class="modal-sub">Modify the event details. Only Heads can save changes.</div>
+      </div>
+      <button class="modal-close" onclick="closeEditEventModal()">Close</button>
+    </div>
+    <form class="requirements-form" onsubmit="saveEditEvent(event)">
+      <input type="hidden" id="ee-id">
+      <div class="requirements-grid-form">
+        <div class="requirements-field">
+          <label for="ee-title">Title *</label>
+          <input id="ee-title" type="text" required placeholder="Event title">
+        </div>
+        <div class="requirements-field">
+          <label for="ee-location">Location *</label>
+          <input id="ee-location" type="text" required placeholder="City, Venue">
+        </div>
+        <div class="requirements-field">
+          <label for="ee-date">Event Date *</label>
+          <input id="ee-date" type="date" required>
+        </div>
+        <div class="requirements-field">
+          <label for="ee-start-time">Start Time</label>
+          <input id="ee-start-time" type="time">
+        </div>
+        <div class="requirements-field">
+          <label for="ee-end-time">End Time</label>
+          <input id="ee-end-time" type="time">
+        </div>
+        <div class="requirements-field">
+          <label for="ee-salary">Salary (₹)</label>
+          <input id="ee-salary" type="number" min="0" step="1" placeholder="500">
+        </div>
+        <div class="requirements-field">
+          <label for="ee-volunteer-limit">Volunteer Limit *</label>
+          <input id="ee-volunteer-limit" type="number" min="1" step="1" required placeholder="30">
+        </div>
+        <div class="requirements-field">
+          <label for="ee-waitlist-limit">Waitlist Limit</label>
+          <input id="ee-waitlist-limit" type="number" min="0" step="1" placeholder="0">
+        </div>
+        <div class="requirements-field">
+          <label for="ee-status">Status</label>
+          <select id="ee-status" class="filter-select" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--white);">
+            <option value="upcoming">Upcoming</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="requirements-field" style="margin-top:6px;">
+        <label for="ee-description">Description</label>
+        <input id="ee-description" type="text" placeholder="Short description of the event">
+      </div>
+      <div class="requirements-field">
+        <label for="ee-image-url">Image URL</label>
+        <input id="ee-image-url" type="text" placeholder="https://images.unsplash.com/photo-...">
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; color: #888;">Or upload local image:</span>
+          <input id="ee-image-file" type="file" accept="image/*" style="font-size: 12px; color: #fff; background: transparent; border: none; cursor: pointer;">
+        </div>
+      </div>
+      <div class="requirements-actions">
+        <button type="button" class="modal-close" onclick="closeEditEventModal()">Cancel</button>
+        <button type="submit" class="btn-confirm">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 // Ensure API
 // s available on this page
@@ -565,6 +687,270 @@ const API_BASE_URL = normalizeApiBaseUrl(
     document.documentElement.dataset.apiBaseUrl ||
     ''
 );
+
+// ── CARD DROPDOWN & ACTIONS ──
+function toggleCardOptions(eventId, e) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById(`card-options-${eventId}`);
+    const isShowing = dropdown && dropdown.style.display === 'block';
+    
+    // Close all open dropdowns
+    document.querySelectorAll('.card-options-dropdown').forEach(d => {
+        d.style.display = 'none';
+    });
+    
+    if (dropdown && !isShowing) {
+        dropdown.style.display = 'block';
+    }
+}
+
+// Close dropdowns on document click
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.card-options-wrapper')) {
+        document.querySelectorAll('.card-options-dropdown').forEach(d => {
+            d.style.display = 'none';
+        });
+    }
+});
+
+function openEditEventModal(eventId, e) {
+    if (e) e.stopPropagation();
+    
+    // Close options dropdown
+    const dropdown = document.getElementById(`card-options-${eventId}`);
+    if (dropdown) dropdown.style.display = 'none';
+    
+    // Find the event
+    const event = shellEvents.find(evt => Number(evt.id) === Number(eventId));
+    if (!event) {
+        showToast('Event not found!', 'var(--red)');
+        return;
+    }
+    
+    // Populate form fields
+    document.getElementById('ee-id').value = event.id;
+    document.getElementById('ee-title').value = event.title || '';
+    document.getElementById('ee-location').value = event.location || '';
+    
+    // Date formatting (YYYY-MM-DD)
+    const rawDate = event.event_date || event.date;
+    if (rawDate) {
+        try {
+            const d = new Date(rawDate);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            document.getElementById('ee-date').value = `${yyyy}-${mm}-${dd}`;
+        } catch(err) {
+            document.getElementById('ee-date').value = '';
+        }
+    } else {
+        document.getElementById('ee-date').value = '';
+    }
+    
+    // Start / End time formatting (HH:MM)
+    document.getElementById('ee-start-time').value = event.start_time ? event.start_time.substring(0, 5) : '';
+    document.getElementById('ee-end-time').value = event.end_time ? event.end_time.substring(0, 5) : '';
+    
+    document.getElementById('ee-salary').value = event.salary != null ? event.salary : 0;
+    document.getElementById('ee-volunteer-limit').value = event.volunteer_limit != null ? event.volunteer_limit : (event.slots || 0);
+    document.getElementById('ee-waitlist-limit').value = event.waitlist_limit != null ? event.waitlist_limit : 0;
+    document.getElementById('ee-status').value = event.status || 'upcoming';
+    document.getElementById('ee-description').value = event.description || '';
+    document.getElementById('ee-image-url').value = event.image_url || event.image || '';
+    document.getElementById('ee-image-file').value = '';
+    
+    // Register image file uploader logic for edit form
+    const eeFilePicker = document.getElementById('ee-image-file');
+    if (eeFilePicker && !eeFilePicker.dataset.listenerRegistered) {
+        eeFilePicker.dataset.listenerRegistered = 'true';
+        eeFilePicker.addEventListener('change', async function(evt) {
+            const file = evt.target.files[0];
+            if (!file) return;
+
+            const urlInput = document.getElementById('ee-image-url');
+            const submitBtn = document.querySelector('#editEventOverlay form button[type="submit"]');
+
+            if (urlInput) {
+                urlInput.value = 'Uploading image, please wait...';
+                urlInput.disabled = true;
+            }
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('imageFile', file);
+
+                const response = await fetch(`${API_BASE_URL}/events/upload-image`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Failed to upload image');
+                }
+
+                const result = await response.json();
+                if (urlInput) {
+                    urlInput.value = result.imageUrl;
+                }
+                showToast('Image uploaded successfully!', 'var(--green)');
+            } catch (error) {
+                console.error('Image upload failed:', error);
+                if (urlInput) urlInput.value = '';
+                showToast(error.message || 'Image upload failed. Please try again.', 'var(--red)');
+            } finally {
+                if (urlInput) urlInput.disabled = false;
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+    }
+
+    document.getElementById('editEventOverlay').classList.add('open');
+}
+
+function closeEditEventModal() {
+    document.getElementById('editEventOverlay').classList.remove('open');
+}
+
+function maybeCloseEditEvent(e) {
+    if (e.target === document.getElementById('editEventOverlay')) {
+        closeEditEventModal();
+    }
+}
+
+async function saveEditEvent(e) {
+    if (e) e.preventDefault();
+    
+    const eventId = document.getElementById('ee-id').value;
+    const title = document.getElementById('ee-title').value.trim();
+    const location = document.getElementById('ee-location').value.trim();
+    const eventDate = document.getElementById('ee-date').value;
+    const startTime = document.getElementById('ee-start-time').value;
+    const endTime = document.getElementById('ee-end-time').value;
+    const salary = document.getElementById('ee-salary').value;
+    const volunteerLimit = document.getElementById('ee-volunteer-limit').value;
+    const waitlistLimit = document.getElementById('ee-waitlist-limit').value;
+    const status = document.getElementById('ee-status').value;
+    const description = document.getElementById('ee-description').value.trim();
+    const imageUrl = document.getElementById('ee-image-url').value.trim();
+
+    if (!title || !location || !eventDate || !volunteerLimit) {
+        showToast('Please fill in all required fields.', 'var(--amber)');
+        return;
+    }
+
+    const rawProfile = localStorage.getItem('volunteerProfile');
+    let headEmail = '';
+    if (rawProfile) {
+        try { headEmail = JSON.parse(rawProfile).email || ''; } catch(err) {}
+    }
+
+    try {
+        const submitBtn = document.querySelector('#editEventOverlay form button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+        }
+
+        const response = await fetch(`${API_BASE_URL}/events/update/${eventId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title,
+                location,
+                event_date: eventDate,
+                start_time: startTime || null,
+                end_time: endTime || null,
+                salary: salary ? Number(salary) : 0,
+                volunteer_limit: Number(volunteerLimit),
+                waitlist_limit: waitlistLimit ? Number(waitlistLimit) : 0,
+                status,
+                description,
+                image_url: imageUrl || undefined,
+                created_by_email: headEmail
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to update event');
+        }
+
+        showToast('Event updated successfully!', 'var(--green)');
+        closeEditEventModal();
+        
+        // Refresh the local event list immediately
+        loadEvents();
+        
+        // Also refresh the iframe head dashboard state if iframe is loaded
+        const iframe = document.getElementById('headDashboardIframe');
+        if (iframe && iframe.contentWindow && typeof iframe.contentWindow.loadCurrentEvent === 'function') {
+            iframe.contentWindow.loadCurrentEvent();
+        }
+    } catch (error) {
+        console.error('Update event error:', error);
+        showToast(error.message || 'Failed to update event', 'var(--red)');
+    } finally {
+        const submitBtn = document.querySelector('#editEventOverlay form button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Save Changes';
+        }
+    }
+}
+
+async function confirmDeleteEvent(eventId, e) {
+    if (e) e.stopPropagation();
+    
+    // Close options dropdown
+    const dropdown = document.getElementById(`card-options-${eventId}`);
+    if (dropdown) dropdown.style.display = 'none';
+    
+    const event = shellEvents.find(evt => Number(evt.id) === Number(eventId));
+    if (!event) return;
+
+    if (!confirm(`Are you sure you want to delete the event "${event.title}"?`)) {
+        return;
+    }
+
+    const rawProfile = localStorage.getItem('volunteerProfile');
+    let headEmail = '';
+    if (rawProfile) {
+        try { headEmail = JSON.parse(rawProfile).email || ''; } catch(err) {}
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/events/delete/${eventId}?created_by_email=${encodeURIComponent(headEmail)}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to delete event');
+        }
+
+        showToast('Event deleted successfully!', 'var(--green)');
+        
+        // Refresh the local event list immediately
+        loadEvents();
+        
+        // Also refresh the iframe head dashboard state if iframe is loaded
+        const iframe = document.getElementById('headDashboardIframe');
+        if (iframe && iframe.contentWindow && typeof iframe.contentWindow.loadCurrentEvent === 'function') {
+            iframe.contentWindow.loadCurrentEvent();
+        }
+    } catch (error) {
+        console.error('Delete event error:', error);
+        showToast(error.message || 'Failed to delete event', 'var(--red)');
+    }
+}
+
 function switchShellTab(tabName, triggerEl) {
   const shellPanels = document.querySelectorAll('.shell-panel');
   shellPanels.forEach(panel => panel.classList.remove('active'));
@@ -809,6 +1195,35 @@ function renderShellEvents() {
     grid.innerHTML = filtered.map(event => createShellEventCard(event)).join('');
 }
 
+function resolveDirectImageUrl(url) {
+    let cleanUrl = String(url || '').trim();
+    if (!cleanUrl) return '';
+
+    // Handle base64 whitespace issues
+    if (cleanUrl.startsWith('data:')) {
+        return cleanUrl.replace(/\s/g, '');
+    }
+
+    // Rewrite Google Drive share links to direct renderable image links
+    if (cleanUrl.includes('drive.google.com')) {
+        let fileId = '';
+        const dMatch = cleanUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (dMatch && dMatch[1]) {
+            fileId = dMatch[1];
+        } else {
+            const idMatch = cleanUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            if (idMatch && idMatch[1]) {
+                fileId = idMatch[1];
+            }
+        }
+        if (fileId) {
+            return `https://drive.google.com/uc?export=view&id=${fileId}`;
+        }
+    }
+
+    return cleanUrl;
+}
+
 function createShellEventCard(event) {
     const rawDate = event.date || event.event_date;
     const formattedDate = rawDate
@@ -838,10 +1253,23 @@ function createShellEventCard(event) {
     };
     const accent = categoryColors[category] || categoryColors.general;
     const safeTitle = String(event.title || 'Untitled Event').replace(/'/g, "\\'");
-    const imageUrl = event.image_url || event.image || '';
+    const imageUrl = resolveDirectImageUrl(event.image_url || event.image || '');
+
+    const storedRole = (localStorage.getItem('eventeaseRole') || '').toString().toLowerCase();
+    const rawProfile = localStorage.getItem('volunteerProfile');
+    let profileRole = '';
+    let signedIn = false;
+    if (rawProfile) {
+      try {
+        const parsed = JSON.parse(rawProfile);
+        profileRole = (parsed.role || '').toString().toLowerCase();
+        signedIn = parsed && Object.keys(parsed).length > 0;
+      } catch (e) {}
+    }
+    const isHead = signedIn && (storedRole === 'head' || profileRole === 'head');
 
     const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
-    const hasApplied = applications.some(app => app.eventId === event.id);
+    const hasApplied = signedIn && applications.some(app => app.eventId === event.id);
     const btnText = hasApplied ? 'Applied' : 'Apply Now';
     const btnDisabled = hasApplied ? 'disabled' : '';
 
@@ -850,15 +1278,6 @@ function createShellEventCard(event) {
         : (event.status && String(event.status).toLowerCase() !== 'upcoming')
             ? event.status
             : '';
-
-    // Check if the logged-in user is a Head
-    const storedRole = (localStorage.getItem('eventeaseRole') || '').toString().toLowerCase();
-    const rawProfile = localStorage.getItem('volunteerProfile');
-    let profileRole = '';
-    if (rawProfile) {
-      try { profileRole = (JSON.parse(rawProfile).role || '').toString().toLowerCase(); } catch (e) {}
-    }
-    const isHead = (storedRole === 'head' || profileRole === 'head');
 
     return `
         <div class="shell-card">
@@ -875,7 +1294,16 @@ function createShellEventCard(event) {
                     <span>₹${salary}</span>
                     <span>${availableSlots} of ${volunteerLimit} spots left</span>
                 </div>
-                ${isHead ? '' : `<button class="shell-event-btn" type="button" ${btnDisabled} onclick="applyForEvent(${event.id}, '${safeTitle}', this)">${btnText}</button>`}
+                ${(signedIn && !isHead) ? `<button class="shell-event-btn" type="button" ${btnDisabled} onclick="applyForEvent(${event.id}, '${safeTitle}', this)">${btnText}</button>` : ''}
+                ${isHead ? `
+                <div class="card-options-wrapper" style="position: relative; display: flex; justify-content: flex-end; margin-top: 10px; z-index: 5;">
+                    <button class="three-dot-btn" type="button" onclick="toggleCardOptions(${event.id}, event)" style="background: none; border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--white); cursor: pointer; font-size: 16px; transition: all 0.2s;">⋮</button>
+                    <div id="card-options-${event.id}" class="card-options-dropdown" style="display: none; position: absolute; right: 0; bottom: 38px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 100; min-width: 100px; padding: 4px 0;">
+                        <button onclick="openEditEventModal(${event.id}, event)" style="display: block; width: 100%; text-align: left; background: none; border: none; color: var(--white); padding: 8px 12px; font-size: 13px; cursor: pointer;">Edit</button>
+                        <button onclick="confirmDeleteEvent(${event.id}, event)" style="display: block; width: 100%; text-align: left; background: none; border: none; color: var(--red); padding: 8px 12px; font-size: 13px; cursor: pointer; border-top: 1px solid var(--border);">Delete</button>
+                    </div>
+                </div>
+                ` : ''}
             </div>
         </div>
     `;
@@ -1257,7 +1685,7 @@ const CRUMB_MAP = { overview:'Overview', events:'My Events', earnings:'Earnings'
 function switchTab(name, triggerEl) { PANEL_NAMES.forEach(p => { document.getElementById('panel-' + p)?.classList.remove('active'); }); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.getElementById('panel-' + name)?.classList.add('active'); const tabBtn = document.querySelector(`.tab[data-tab="${name}"]`); if (tabBtn) tabBtn.classList.add('active'); const navBtn = document.querySelector(`.nav-item[data-tab="${name}"]`); if (navBtn) navBtn.classList.add('active'); document.getElementById('breadcrumb-label').textContent = CRUMB_MAP[name] || name; closeSidebar(); if (name === 'events') renderEvents(); }
 function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('show'); }
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
-function logout() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); window.location.href = 'index.html'; }
+function logout() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); localStorage.removeItem('stafflyApplications'); window.location.href = 'index.html'; }
 let toastTimer;
 function showToast(msg, color = 'var(--green)') { const t = document.getElementById('toast'); document.getElementById('toast-msg').textContent = msg; document.getElementById('toast-dot').style.background = color; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800); }
 const cur = document.getElementById('cursor');

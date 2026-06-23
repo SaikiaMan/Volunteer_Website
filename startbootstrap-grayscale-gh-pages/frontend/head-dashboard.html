@@ -238,7 +238,7 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
 .btn-confirm:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; transform: none; }
 
 .requirements-modal { width: min(720px, 94%); }
-.requirements-form { display: flex; flex-direction: column; gap: 14px; }
+.requirements-form { display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; overflow-y: auto; padding-right: 4px; }
 .requirements-grid-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .requirements-field { display: flex; flex-direction: column; gap: 8px; }
 .requirements-field label {
@@ -608,6 +608,13 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
 /* Overlay for sidebar on mobile */
 .sidebar-overlay { display: none; }
 .sidebar-overlay.show { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.36); z-index: 55; }
+body, body *, button, input, select, textarea {
+  color: #ffffff !important;
+}
+::placeholder {
+  color: #ffffff !important;
+  opacity: 0.6;
+}
 </style>
 </head>
 <body>
@@ -887,7 +894,11 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
       </div>
       <div class="requirements-field">
         <label for="ce-image-url">Image URL</label>
-        <input id="ce-image-url" type="url" placeholder="https://images.unsplash.com/photo-...">
+        <input id="ce-image-url" type="text" placeholder="https://images.unsplash.com/photo-...">
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; color: #888;">Or upload local image:</span>
+          <input id="ce-image-file" type="file" accept="image/*" style="font-size: 12px; color: #fff; background: transparent; border: none; cursor: pointer;">
+        </div>
       </div>
       <div class="requirements-actions">
         <button type="button" class="modal-close" onclick="closeCreateEventModal()">Cancel</button>
@@ -1362,6 +1373,60 @@ function loadStateForEvent(eventId) {
 async function init() {
   updateHeadIdentity();
   await loadCurrentEvent();
+
+  const imageFileInput = document.getElementById('ce-image-file');
+  if (imageFileInput) {
+    imageFileInput.addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const urlInput = document.getElementById('ce-image-url');
+      const submitBtn = document.querySelector('.btn-confirm[type="submit"]') || document.querySelector('form.requirements-form button[type="submit"]');
+
+      if (urlInput) {
+        urlInput.value = 'Uploading image, please wait...';
+        urlInput.disabled = true;
+      }
+      if (submitBtn) {
+        submitBtn.disabled = true;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('imageFile', file);
+
+        const response = await fetch(`${API_BASE_URL}/events/upload-image`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || 'Failed to upload image');
+        }
+
+        const result = await response.json();
+        if (urlInput) {
+          urlInput.value = result.imageUrl;
+        }
+        showToast('Image uploaded successfully!', 'var(--green)');
+      } catch (error) {
+        console.error('Image upload failed:', error);
+        if (urlInput) {
+          urlInput.value = '';
+        }
+        showToast(error.message || 'Image upload failed. Please try again.', 'var(--red)');
+      } finally {
+        if (urlInput) {
+          urlInput.disabled = false;
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+        }
+      }
+    });
+  }
+
   if (window.innerWidth <= 820) closeSidebar();
 }
 
