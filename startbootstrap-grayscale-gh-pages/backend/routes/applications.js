@@ -1,19 +1,24 @@
 const express = require('express');
-const { applyForEvent, getApplications, getApplicationsByEvent } = require('../controllers/applicationsController');
+const { applyForEvent, getApplications, getApplicationById, updateApplicationStatus } = require('../controllers/applicationsController');
 
 function createApplicationsRouter({ supabase }) {
     const router = express.Router();
 
     console.log('Applications router registered');
 
-    router.get('/applications/list', (req, res) => {
-        console.log('GET /applications/list hit');
+    router.get('/applications', (req, res) => {
+        console.log('GET /applications hit', req.query);
         getApplications(req, res, supabase);
     });
 
-    router.get('/applications/event/:eventId', (req, res) => {
-        console.log(`GET /applications/event/${req.params.eventId} hit`);
-        getApplicationsByEvent(req, res, supabase);
+    router.get('/applications/:id', (req, res) => {
+        console.log(`GET /applications/${req.params.id} hit`);
+        getApplicationById(req, res, supabase);
+    });
+
+    router.put('/applications/:id/status', (req, res) => {
+        console.log(`PUT /applications/${req.params.id}/status hit`);
+        updateApplicationStatus(req, res, supabase);
     });
 
     router.post('/applications/apply', (req, res) => {

@@ -10,6 +10,7 @@ function createVolunteersRouter({ supabase, upload }) {
     router.post('/volunteers/create-profile', volunteers.createProfile);
     router.post('/volunteers/login', volunteers.login);
     router.post('/volunteers/check-email', volunteers.checkEmail);
+    router.get('/volunteers/applications', volunteers.getMyApplications);
     router.put('/volunteers/update', upload.single('photoUpload'), volunteers.update);
 
     return router;

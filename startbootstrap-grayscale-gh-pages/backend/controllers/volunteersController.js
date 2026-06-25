@@ -10,6 +10,31 @@ function getAuthClient() {
     });
 }
 
+async function getCurrentVolunteer(supabase, req) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return null;
+
+    try {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await getAuthClient().auth.getUser(token);
+
+        if (authError || !user) return null;
+
+        const { data: volunteerData, error: volunteerError } = await supabase
+            .from('Volunteers')
+            .select('*')
+            .eq('user_id', user.id)
+            .limit(1);
+
+        if (volunteerError || !Array.isArray(volunteerData) || volunteerData.length === 0) return null;
+
+        return volunteerData[0];
+    } catch (err) {
+        console.error('getCurrentVolunteer error:', err);
+        return null;
+    }
+}
+
 function createVolunteersController({ supabase }) {
     return {
         async signup(req, res) {
@@ -366,6 +391,36 @@ function createVolunteersController({ supabase }) {
             } catch (error) {
                 console.error('Check email error:', error);
                 return res.status(500).json({ success: false, error: error.message });
+            }
+        },
+
+        async getMyApplications(req, res) {
+            try {
+                const volunteer = await getCurrentVolunteer(supabase, req);
+                if (!volunteer) {
+                    return res.status(401).json({ success: false, error: 'Authentication required' });
+                }
+
+                const { data, error } = await supabase
+                    .from('Applications')
+                    .select(`
+                        status,
+                        Events (title)
+                    `)
+                    .eq('volunteer_id', volunteer.id)
+                    .order('applied_at', { ascending: false });
+
+                if (error) throw error;
+
+                const result = (data || []).map(app => ({
+                    event: app.Events?.title || 'Unknown Event',
+                    status: app.status
+                }));
+
+                res.json(result);
+            } catch (error) {
+                console.error('getMyApplications error:', error);
+                res.status(500).json({ success: false, error: error.message });
             }
         },
 

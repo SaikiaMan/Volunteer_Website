@@ -1,3 +1,40 @@
+const { createClient } = require('@supabase/supabase-js');
+
+function getAuthClient() {
+    return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+        }
+    });
+}
+
+async function getCurrentVolunteer(supabase, req) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return null;
+
+    try {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await getAuthClient().auth.getUser(token);
+
+        if (authError || !user) return null;
+
+        const { data: volunteerData, error: volunteerError } = await supabase
+            .from('Volunteers')
+            .select('*')
+            .eq('user_id', user.id)
+            .limit(1);
+
+        if (volunteerError || !Array.isArray(volunteerData) || volunteerData.length === 0) return null;
+
+        return volunteerData[0];
+    } catch (err) {
+        console.error('getCurrentVolunteer error:', err);
+        return null;
+    }
+}
+
 async function getVolunteerByIdentifier(supabase, identifier) {
     if (!identifier) return null;
 
@@ -15,22 +52,6 @@ async function getVolunteerByIdentifier(supabase, identifier) {
             console.error('getVolunteerByIdentifier email error:', emailError);
         } else if (Array.isArray(byEmail) && byEmail.length > 0) {
             return byEmail[0];
-        }
-
-        // Try user_id (UUID)
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(cleanedIdentifier)) {
-            const { data: byUserId, error: userIdError } = await supabase
-                .from('Volunteers')
-                .select('*')
-                .eq('user_id', cleanedIdentifier)
-                .limit(1);
-
-            if (userIdError) {
-                console.error('getVolunteerByIdentifier user_id error:', userIdError);
-            } else if (Array.isArray(byUserId) && byUserId.length > 0) {
-                return byUserId[0];
-            }
         }
 
         // Try numeric id
@@ -56,28 +77,37 @@ async function getVolunteerByIdentifier(supabase, identifier) {
     }
 }
 
-async function isVolunteer(supabase, identifier) {
-    const volunteer = await getVolunteerByIdentifier(supabase, identifier);
-    if (!volunteer) return false;
-    const role = String(volunteer.role || '').toLowerCase();
-    return role === 'volunteer';
-}
-
 async function applyForEvent(req, res, supabase) {
     try {
-        const { event_id: eventId, eventId: bodyEventId, applicant_email, applicant_user_id, applicant_id } = req.body;
-
+        const { event_id: eventId, eventId: bodyEventId, volunteer_id: volunteerId, applicant_email, applicant_id } = req.body;
         const targetEventId = eventId || bodyEventId;
-        const applicantIdentifier = applicant_email || applicant_user_id || applicant_id;
 
-        if (!targetEventId || !applicantIdentifier) {
+        if (!targetEventId) {
             return res.status(400).json({
                 success: false,
-                error: 'event_id and applicant identifier (email/user_id/id) are required'
+                error: 'event_id is required'
             });
         }
 
-        const volunteer = await getVolunteerByIdentifier(supabase, applicantIdentifier);
+        let volunteer = null;
+
+        // Prefer explicit volunteer_id from body
+        if (volunteerId) {
+            volunteer = await getVolunteerByIdentifier(supabase, volunteerId);
+        }
+
+        // Fallback to applicant_email or applicant_id
+        if (!volunteer) {
+            const identifier = applicant_email || applicant_id;
+            if (identifier) {
+                volunteer = await getVolunteerByIdentifier(supabase, identifier);
+            }
+        }
+
+        // Fallback to authenticated user
+        if (!volunteer) {
+            volunteer = await getCurrentVolunteer(supabase, req);
+        }
 
         if (!volunteer) {
             return res.status(404).json({
@@ -94,68 +124,29 @@ async function applyForEvent(req, res, supabase) {
             });
         }
 
-        // Check if already applied by volunteer id
-        if (volunteer.id) {
-            const { data: existingByVolunteerId, error: volunteerIdError } = await supabase
-                .from('Applications')
-                .select('id')
-                .eq('event_id', targetEventId)
-                .eq('volunteer_id', volunteer.id)
-                .limit(1);
+        // Duplicate check: only (event_id + volunteer_id)
+        const { data: existing, error: existingError } = await supabase
+            .from('Applications')
+            .select('id')
+            .eq('event_id', Number(targetEventId))
+            .eq('volunteer_id', volunteer.id)
+            .limit(1);
 
-            if (volunteerIdError) {
-                console.error('Check existing application by volunteer_id error:', volunteerIdError);
-            } else if (Array.isArray(existingByVolunteerId) && existingByVolunteerId.length > 0) {
-                return res.status(409).json({
-                    success: false,
-                    error: 'You have already applied for this event'
-                });
-            }
+        if (existingError) {
+            console.error('Check existing application error:', existingError);
+            throw existingError;
         }
 
-        // Check if already applied by user_id
-        if (volunteer.user_id) {
-            const { data: existingByUserId, error: userIdError } = await supabase
-                .from('Applications')
-                .select('id')
-                .eq('event_id', targetEventId)
-                .eq('user_id', volunteer.user_id)
-                .limit(1);
-
-            if (userIdError) {
-                console.error('Check existing application by user_id error:', userIdError);
-            } else if (Array.isArray(existingByUserId) && existingByUserId.length > 0) {
-                return res.status(409).json({
-                    success: false,
-                    error: 'You have already applied for this event'
-                });
-            }
-        }
-
-        // Check if already applied by email
-        if (volunteer.email) {
-            const { data: existingByEmail, error: emailError } = await supabase
-                .from('Applications')
-                .select('id')
-                .eq('event_id', targetEventId)
-                .ilike('email', volunteer.email)
-                .limit(1);
-
-            if (emailError) {
-                console.error('Check existing application by email error:', emailError);
-            } else if (Array.isArray(existingByEmail) && existingByEmail.length > 0) {
-                return res.status(409).json({
-                    success: false,
-                    error: 'You have already applied for this event'
-                });
-            }
+        if (Array.isArray(existing) && existing.length > 0) {
+            return res.status(409).json({
+                success: false,
+                error: 'You have already applied for this event'
+            });
         }
 
         const applicationData = {
             event_id: Number(targetEventId),
-            volunteer_id: volunteer.id || null,
-            user_id: volunteer.user_id || null,
-            email: volunteer.email || null,
+            volunteer_id: volunteer.id,
             status: 'pending'
         };
 
@@ -186,7 +177,17 @@ async function getApplications(req, res, supabase) {
 
         let query = supabase
             .from('Applications')
-            .select('*')
+            .select(`
+                *,
+                Volunteers (
+                    full_name,
+                    email,
+                    contact,
+                    photo_url,
+                    description,
+                    "past experience"
+                )
+            `)
             .order('applied_at', { ascending: false });
 
         if (eventId) {
@@ -211,21 +212,170 @@ async function getApplications(req, res, supabase) {
     }
 }
 
-async function getApplicationsByEvent(req, res, supabase) {
+async function getApplicationById(req, res, supabase) {
     try {
-        const { eventId } = req.params;
+        const { id } = req.params;
 
         const { data, error } = await supabase
             .from('Applications')
-            .select('*')
-            .eq('event_id', eventId)
-            .order('applied_at', { ascending: false });
+            .select(`
+                *,
+                Volunteers (
+                    full_name,
+                    email,
+                    contact,
+                    photo_url,
+                    description,
+                    "past experience"
+                ),
+                Events (title)
+            `)
+            .eq('id', id)
+            .limit(1);
 
         if (error) throw error;
 
-        res.json(data || []);
+        if (!Array.isArray(data) || data.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Application not found'
+            });
+        }
+
+        res.json(data[0]);
     } catch (err) {
-        console.error('getApplicationsByEvent error:', err);
+        console.error('getApplicationById error:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+}
+
+async function updateApplicationStatus(req, res, supabase) {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const allowedStatuses = ['accepted', 'waitlist', 'rejected', 'pending'];
+        if (!status || !allowedStatuses.includes(status.toLowerCase())) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid status. Allowed: accepted, waitlist, rejected, pending'
+            });
+        }
+
+        const normalizedStatus = status.toLowerCase();
+
+        // Only Heads can change status
+        const currentVolunteer = await getCurrentVolunteer(supabase, req);
+        if (!currentVolunteer || String(currentVolunteer.role || '').toLowerCase() !== 'head') {
+            return res.status(403).json({
+                success: false,
+                error: 'Only Head users can update application status'
+            });
+        }
+
+        // Get the application
+        const { data: applicationData, error: applicationError } = await supabase
+            .from('Applications')
+            .select('*')
+            .eq('id', id)
+            .limit(1);
+
+        if (applicationError) throw applicationError;
+
+        if (!Array.isArray(applicationData) || applicationData.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Application not found'
+            });
+        }
+
+        const application = applicationData[0];
+        const eventId = application.event_id;
+
+        // Get event limits
+        const { data: eventData, error: eventError } = await supabase
+            .from('Events')
+            .select('volunteer_limit, waitlist_limit')
+            .eq('id', eventId)
+            .limit(1);
+
+        if (eventError) throw eventError;
+
+        if (!Array.isArray(eventData) || eventData.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Event not found for this application'
+            });
+        }
+
+        const event = eventData[0];
+
+        // Enforce accepted limit
+        if (normalizedStatus === 'accepted') {
+            const { count: acceptedCount, error: countError } = await supabase
+                .from('Applications')
+                .select('*', { count: 'exact', head: true })
+                .eq('event_id', eventId)
+                .eq('status', 'accepted')
+                .neq('id', id);
+
+            if (countError) throw countError;
+
+            const volunteerLimit = event.volunteer_limit != null ? Number(event.volunteer_limit) : 0;
+
+            if (volunteerLimit > 0 && acceptedCount >= volunteerLimit) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Volunteer limit reached.'
+                });
+            }
+        }
+
+        // Enforce waitlist limit
+        if (normalizedStatus === 'waitlist') {
+            const { count: waitlistCount, error: countError } = await supabase
+                .from('Applications')
+                .select('*', { count: 'exact', head: true })
+                .eq('event_id', eventId)
+                .eq('status', 'waitlist')
+                .neq('id', id);
+
+            if (countError) throw countError;
+
+            const waitlistLimit = event.waitlist_limit != null ? Number(event.waitlist_limit) : 0;
+
+            if (waitlistLimit > 0 && waitlistCount >= waitlistLimit) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Waitlist full.'
+                });
+            }
+        }
+
+        const updateData = {
+            status: normalizedStatus,
+            decided_at: new Date().toISOString(),
+            decided_by: currentVolunteer.id
+        };
+
+        const { data, error } = await supabase
+            .from('Applications')
+            .update(updateData)
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            message: `Application status updated to ${normalizedStatus}`,
+            data: data[0]
+        });
+    } catch (err) {
+        console.error('updateApplicationStatus error:', err);
         res.status(500).json({
             success: false,
             error: err.message
@@ -236,5 +386,6 @@ async function getApplicationsByEvent(req, res, supabase) {
 module.exports = {
     applyForEvent,
     getApplications,
-    getApplicationsByEvent
+    getApplicationById,
+    updateApplicationStatus
 };
