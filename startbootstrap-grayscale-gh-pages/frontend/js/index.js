@@ -25,6 +25,7 @@ const API_BASE_URL = normalizeApiBaseUrl(
     document.documentElement.dataset.apiBaseUrl ||
     ''
 );
+window.API_BASE_URL = API_BASE_URL;
 
 function getStoredRole() {
     return localStorage.getItem('eventeaseRole') || 'volunteer';
@@ -224,6 +225,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     statusDiv.innerHTML = '✔ Success! Profile Created.';
                     const profile = normalizeVolunteerProfile(data.user, data.user.email);
                     localStorage.setItem('volunteerProfile', JSON.stringify(profile));
+                    localStorage.setItem('volunteerToken', accessToken);
                     
                     setTimeout(() => {
                         window.location.hash = ''; // Clear hash
@@ -516,6 +518,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // Store the profile data in localStorage
                 const profile = normalizeVolunteerProfile(result.user || result.data || {}, email);
                 localStorage.setItem('volunteerProfile', JSON.stringify(profile));
+                if (result.session && result.session.access_token) {
+                    localStorage.setItem('volunteerToken', result.session.access_token);
+                }
                 try { showLogoutIfLogged(); } catch (e) { /* ignore */ }
 
                 // If backend marks this profile as Head, redirect to head dashboard

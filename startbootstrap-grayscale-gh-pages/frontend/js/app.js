@@ -25,6 +25,7 @@ const API_BASE_URL = normalizeApiBaseUrl(
     document.documentElement.dataset.apiBaseUrl ||
     ''
 );
+window.API_BASE_URL = API_BASE_URL;
 
 function getStoredRole() {
     return localStorage.getItem('eventeaseRole') || 'volunteer';
@@ -80,6 +81,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     statusDiv.style.background = '#28a745';
                     statusDiv.innerHTML = '✔ Profile Ready!';
                     localStorage.setItem('volunteerProfile', JSON.stringify(data.user));
+                    localStorage.setItem('volunteerToken', accessToken);
                     console.log('Profile created/synced in app successfully.');
                     
                     setTimeout(() => {
@@ -168,6 +170,47 @@ function switchTab(tabName, pushState = true) {
 
 let appEvents = [];
 let currentEventFilter = 'all';
+let userApplications = [];
+
+// Load user applications
+async function loadUserApplications() {
+    const rawProfile = localStorage.getItem('volunteerProfile');
+    if (!rawProfile) {
+        userApplications = [];
+        return;
+    }
+
+    let profile = {};
+    try {
+        profile = JSON.parse(rawProfile);
+    } catch (e) {
+        userApplications = [];
+        return;
+    }
+
+    const token = localStorage.getItem('volunteerToken') || '';
+    const email = profile.email || '';
+    const volId = profile.id || '';
+
+    try {
+        console.log('[DEBUG] loadUserApplications - Requesting applications. email:', email, 'volId:', volId);
+        const response = await fetch(`${API_BASE_URL}/volunteers/applications?email=${encodeURIComponent(email)}&volunteer_id=${encodeURIComponent(volId)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (response.ok) {
+            userApplications = await response.json();
+            console.log('[DEBUG] loadUserApplications success. applications:', userApplications);
+        } else {
+            console.warn('[DEBUG] loadUserApplications error status:', response.status);
+            userApplications = [];
+        }
+    } catch (error) {
+        console.error('[DEBUG] Failed to load user applications:', error);
+        userApplications = [];
+    }
+}
 
 // Load and display events from the backend
 async function loadEvents() {
@@ -177,6 +220,7 @@ async function loadEvents() {
     eventsGrid.innerHTML = '<div class="empty-state">Loading events...</div>';
 
     try {
+        await loadUserApplications();
         const response = await fetch(`${API_BASE_URL}/events/list`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -243,6 +287,32 @@ function createEventCard(event) {
     }
     const isHead = (storedRole === 'head' || profileRole === 'head');
 
+    // Find if the volunteer has applied to this event
+    const userApp = userApplications.find(a => Number(a.event_id) === Number(event.id));
+    console.log('[DEBUG] createEventCard - event.id:', event.id, 'match userApp:', userApp, 'isHead:', isHead);
+    let actionBtnHtml = '';
+
+    if (isHead) {
+        actionBtnHtml = '';
+    } else if (userApp) {
+        const status = String(userApp.status).toLowerCase();
+        if (status === 'accepted') {
+            actionBtnHtml = `<button class="event-btn accepted" disabled>Accepted</button>`;
+        } else if (status === 'rejected') {
+            actionBtnHtml = `<button class="event-btn rejected" disabled>Rejected</button>`;
+        } else if (status === 'waitlist' || status === 'waitlisted') {
+            actionBtnHtml = `<button class="event-btn waitlisted" disabled>Waitlisted</button>`;
+        } else {
+            actionBtnHtml = `<button class="event-btn applied" disabled>Applied</button>`;
+        }
+    } else {
+        actionBtnHtml = `
+        <button class="event-btn" onclick="applyForEvent(${event.id}, '${safeTitle}')">
+            Apply Now
+        </button>
+        `;
+    }
+
     card.innerHTML = `
         <img src="${imageUrl}" alt="${event.title || ''}" class="event-image" onerror="this.style.display='none'">
         <div class="event-card-body">
@@ -263,11 +333,7 @@ function createEventCard(event) {
                     <strong>${availableSlots}</strong>
                 </div>
             </div>
-            ${isHead ? '' : `
-            <button class="event-btn" onclick="applyForEvent(${event.id}, '${safeTitle}')">
-                Apply Now
-            </button>
-            `}
+            ${actionBtnHtml}
         </div>
     `;
 
@@ -339,6 +405,7 @@ async function applyForEvent(eventId, eventTitle) {
         }
 
         alert(`Successfully applied for "${eventTitle}"! You will receive confirmation soon.`);
+        loadEvents();
     } catch (error) {
         console.error('Apply error:', error);
         alert(error.message || 'Failed to apply. Please try again.');
@@ -685,6 +752,7 @@ function loadProfile() {
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('volunteerProfile');
+        localStorage.removeItem('volunteerToken');
         localStorage.removeItem('eventeaseRole');
         localStorage.removeItem('stafflyApplications');
         window.location.href = 'index.html';
@@ -884,6 +952,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Store profile in localStorage for session
                     localStorage.setItem('volunteerProfile', JSON.stringify(result.user));
+                    if (result.session && result.session.access_token) {
+                        localStorage.setItem('volunteerToken', result.session.access_token);
+                    }
                     
                     // Update navbar buttons
                     loadProfile();

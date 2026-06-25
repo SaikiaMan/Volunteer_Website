@@ -315,6 +315,10 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 .shell-event-btn { width:100%; background:var(--green); color:var(--black); border:none; border-radius:20px; padding:10px 14px; font:500 13px var(--sans); cursor:pointer; }
 .shell-event-btn:hover { box-shadow:0 0 18px var(--green-glow); }
 .shell-event-btn:disabled { opacity:.5; cursor:not-allowed; }
+.shell-event-btn.accepted { background:#198754 !important; color:var(--white) !important; opacity:1 !important; cursor:default !important; }
+.shell-event-btn.rejected { background:#dc3545 !important; color:var(--white) !important; opacity:1 !important; cursor:default !important; }
+.shell-event-btn.waitlisted { background:#ffc107 !important; color:var(--black) !important; opacity:1 !important; cursor:default !important; }
+.shell-event-btn.applied { background:#6c757d !important; color:var(--white) !important; opacity:1 !important; cursor:default !important; }
 .shell-card-image { width:100%; height:160px; object-fit:cover; display:block; border-bottom:1px solid var(--border); }
 .shell-chat { min-height:calc(100vh - 140px); display:grid; place-items:center; }
 .shell-coming { max-width:640px; width:100%; background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:36px 28px; text-align:center; }
@@ -963,6 +967,13 @@ function switchShellTab(tabName, triggerEl) {
 
   if (tabName === 'events') {
     loadEvents();
+  } else if (tabName === 'dashboard') {
+    loadUserApplications().then(() => {
+        if (typeof renderEvents === 'function') renderEvents();
+        if (typeof renderEarnings === 'function') renderEarnings();
+    }).catch(err => {
+        console.warn('loadUserApplications failed during dashboard switch:', err);
+    });
   }
 }
 
@@ -1020,8 +1031,8 @@ const MONTHLY = {
 };
 let activePeriod = '2026';
 let expSeq = EXPS.length + 1;
-const AC = { accepted:'green', pending:'muted', rejected:'red', completed:'blue', supervisor:'blue', organiser:'purple' };
-const LBL = { accepted:'Accepted', pending:'Pending', rejected:'Rejected', completed:'Completed', supervisor:'Supervisor', organiser:'Organiser' };
+const AC = { accepted:'green', pending:'muted', rejected:'red', completed:'blue', supervisor:'blue', organiser:'purple', waitlist:'amber', waitlisted:'amber' };
+const LBL = { accepted:'Accepted', pending:'Pending', rejected:'Rejected', completed:'Completed', supervisor:'Supervisor', organiser:'Organiser', waitlist:'Waitlisted', waitlisted:'Waitlisted' };
 function getProfilePhotoUrl(profile) {
   return profile.photoDataUrl || profile.photo_url || profile.photoUrl || profile.avatarUrl || profile.avatar || profile.profilePic || profile.profilePicUrl || '';
 }
@@ -1121,6 +1132,46 @@ function saveProfileHandler(btn) {
 
 let shellEvents = [];
 let currentShellFilter = 'upcoming';
+let userApplications = [];
+
+async function loadUserApplications() {
+    const rawProfile = localStorage.getItem('volunteerProfile');
+    if (!rawProfile) {
+        userApplications = [];
+        return;
+    }
+
+    let profile = {};
+    try {
+        profile = JSON.parse(rawProfile);
+    } catch (e) {
+        userApplications = [];
+        return;
+    }
+
+    const token = localStorage.getItem('volunteerToken') || '';
+    const email = profile.email || '';
+    const volId = profile.id || profile.user_id || '';
+
+    try {
+        console.log('[DEBUG] loadUserApplications - Requesting applications. email:', email, 'volId:', volId);
+        const response = await fetch(`${API_BASE_URL}/volunteers/applications?email=${encodeURIComponent(email)}&volunteer_id=${encodeURIComponent(volId)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (response.ok) {
+            userApplications = await response.json();
+            console.log('[DEBUG] loadUserApplications success. applications:', userApplications);
+        } else {
+            console.warn('[DEBUG] loadUserApplications error status:', response.status);
+            userApplications = [];
+        }
+    } catch (error) {
+        console.error('[DEBUG] Failed to load user applications:', error);
+        userApplications = [];
+    }
+}
 
 function filterShellEvents(filterType, element) {
     currentShellFilter = filterType;
@@ -1145,6 +1196,11 @@ async function loadEvents() {
     grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">Loading events...</div>';
 
     try {
+        try {
+            await loadUserApplications();
+        } catch (uAppErr) {
+            console.warn('loadUserApplications failed, continuing to load events:', uAppErr);
+        }
         const response = await fetch(`${API_BASE_URL}/events/list`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -1268,10 +1324,25 @@ function createShellEventCard(event) {
     }
     const isHead = signedIn && (storedRole === 'head' || profileRole === 'head');
 
-    const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
-    const hasApplied = signedIn && applications.some(app => app.eventId === event.id);
-    const btnText = hasApplied ? 'Applied' : 'Apply Now';
-    const btnDisabled = hasApplied ? 'disabled' : '';
+    // Dynamically query application status from database
+    const userApp = signedIn && !isHead ? userApplications.find(a => Number(a.event_id) === Number(event.id)) : null;
+    let btnHtml = '';
+    if (signedIn && !isHead) {
+        if (userApp) {
+            const status = String(userApp.status || 'pending').toLowerCase();
+            if (status === 'accepted') {
+                btnHtml = `<button class="shell-event-btn accepted" type="button" disabled>Accepted</button>`;
+            } else if (status === 'rejected') {
+                btnHtml = `<button class="shell-event-btn rejected" type="button" disabled>Rejected</button>`;
+            } else if (status === 'waitlist' || status === 'waitlisted') {
+                btnHtml = `<button class="shell-event-btn waitlisted" type="button" disabled>Waitlisted</button>`;
+            } else {
+                btnHtml = `<button class="shell-event-btn applied" type="button" disabled>Applied</button>`;
+            }
+        } else {
+            btnHtml = `<button class="shell-event-btn" type="button" onclick="applyForEvent(${event.id}, '${safeTitle}', this)">Apply Now</button>`;
+        }
+    }
 
     const categoryText = (event.category && String(event.category).toLowerCase() !== 'upcoming')
         ? event.category
@@ -1294,7 +1365,7 @@ function createShellEventCard(event) {
                     <span>₹${salary}</span>
                     <span>${availableSlots} of ${volunteerLimit} spots left</span>
                 </div>
-                ${(signedIn && !isHead) ? `<button class="shell-event-btn" type="button" ${btnDisabled} onclick="applyForEvent(${event.id}, '${safeTitle}', this)">${btnText}</button>` : ''}
+                ${btnHtml}
                 ${isHead ? `
                 <div class="card-options-wrapper" style="position: relative; display: flex; justify-content: flex-end; margin-top: 10px; z-index: 5;">
                     <button class="three-dot-btn" type="button" onclick="toggleCardOptions(${event.id}, event)" style="background: none; border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--white); cursor: pointer; font-size: 16px; transition: all 0.2s;">⋮</button>
@@ -1377,8 +1448,14 @@ async function applyForEvent(eventId, eventTitle, btn) {
         }
 
         showToast(`Applied for "${eventTitle}"!`, 'var(--green)');
-        if (btn) {
-            btn.textContent = 'Applied';
+        try {
+            await loadEvents();
+        } catch (e) {
+            if (btn) {
+                btn.textContent = 'Applied';
+                btn.disabled = true;
+                btn.className = 'shell-event-btn applied';
+            }
         }
     } catch (error) {
         console.error('Apply error:', error);
@@ -1465,8 +1542,7 @@ function renderEvents() {
   const evList = document.getElementById('ev-list');
   if (!evList) return;
 
-  const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
-  if (!applications.length) {
+  if (!userApplications || !userApplications.length) {
     evList.innerHTML = '<div class="empty">No events applied yet.</div>';
     document.getElementById('nb-events').textContent = '0';
     document.getElementById('tc-events').textContent = '0';
@@ -1485,30 +1561,25 @@ function renderEvents() {
   const volunteerId = VOL.id || VOL.user_id || '';
 
   const appliedEvents = [];
-  applications.forEach(app => {
-    const event = shellEvents.find(e => e.id === app.eventId);
+  userApplications.forEach(app => {
+    const event = shellEvents.find(e => Number(e.id) === Number(app.event_id));
     if (!event) return;
 
-    let status = 'pending';
-    if (supervisorsList.some(s => s.id === volunteerId && Number(s.eventId) === Number(app.eventId))) {
+    let status = String(app.status || 'pending').toLowerCase();
+    if (supervisorsList.some(s => s.id === volunteerId && Number(s.eventId) === Number(app.event_id))) {
       status = 'supervisor';
-    } else if (organisersList.some(o => o.id === volunteerId && Number(o.eventId) === Number(app.eventId))) {
+    } else if (organisersList.some(o => o.id === volunteerId && Number(o.eventId) === Number(app.event_id))) {
       status = 'organiser';
-    } else if (acceptedList.some(a => a.id === volunteerId && Number(a.eventId) === Number(app.eventId))) {
+    } else if (acceptedList.some(a => a.id === volunteerId && Number(a.eventId) === Number(app.event_id))) {
       status = 'accepted';
-    } else if (waitlistedList.some(w => w.id === volunteerId && Number(w.eventId) === Number(app.eventId))) {
-      status = 'pending';
-    } else {
-      const appRecord = appsList.find(a => a.id === volunteerId && Number(a.eventId) === Number(app.eventId));
-      if (appRecord) {
-        status = appRecord.status || 'pending';
-      }
+    } else if (waitlistedList.some(w => w.id === volunteerId && Number(w.eventId) === Number(app.event_id))) {
+      status = 'waitlisted';
     }
 
     appliedEvents.push({
       ...event,
       appStatus: status,
-      appliedAt: app.appliedAt
+      appliedAt: app.applied_at || new Date().toISOString()
     });
   });
 
@@ -1570,7 +1641,6 @@ function renderEvents() {
 }
 function renderEarnings() {
   if (!document.getElementById('earn-summary')) return;
-  const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
   
   // Load head dashboard state to check status
   const HEAD_DASHBOARD_STORAGE_KEY = 'eventeaseHeadDashboardState';
@@ -1591,16 +1661,20 @@ function renderEarnings() {
     '2025': { Jan:0, Feb:0, Mar:0, Apr:0, May:0, Jun:0, Jul:0, Aug:0, Sep:0, Oct:0, Nov:0, Dec:0 }
   };
 
-  applications.forEach(app => {
-    const event = shellEvents.find(e => e.id === app.eventId);
-    if (!event) return;
+  if (userApplications && userApplications.length) {
+    userApplications.forEach(app => {
+      const event = shellEvents.find(e => Number(e.id) === Number(app.event_id));
+      if (!event) return;
 
-    let isEarnedState = false;
-    if (supervisorsList.some(s => s.id === volunteerId && Number(s.eventId) === Number(app.eventId)) ||
-        organisersList.some(o => o.id === volunteerId && Number(o.eventId) === Number(app.eventId)) ||
-        acceptedList.some(a => a.id === volunteerId && Number(a.eventId) === Number(app.eventId))) {
-      isEarnedState = true;
-    }
+      let isEarnedState = false;
+      const status = String(app.status || 'pending').toLowerCase();
+      if (status === 'accepted' || status === 'completed') {
+        isEarnedState = true;
+      } else if (supervisorsList.some(s => s.id === volunteerId && Number(s.eventId) === Number(app.event_id)) ||
+          organisersList.some(o => o.id === volunteerId && Number(o.eventId) === Number(app.event_id)) ||
+          acceptedList.some(a => a.id === volunteerId && Number(a.eventId) === Number(app.event_id))) {
+        isEarnedState = true;
+      }
 
     if (isEarnedState) {
       const salary = Number(event.salary || 0);
@@ -1637,6 +1711,7 @@ function renderEarnings() {
       });
     }
   });
+  }
 
   const avgPerEvent = completedCount ? Math.round(totalEarned / completedCount) : 0;
 
@@ -1704,7 +1779,32 @@ function setPeriod(yr, btn) { activePeriod = yr; document.querySelectorAll('.per
 function saveProfile() { VOL.fn = document.getElementById('f-fn').value.trim(); VOL.ln = document.getElementById('f-ln').value.trim(); VOL.age = parseInt(document.getElementById('f-age').value) || VOL.age; VOL.loc = document.getElementById('f-loc').value.trim(); VOL.email = document.getElementById('f-email').value.trim(); VOL.phone = document.getElementById('f-phone').value.trim(); VOL.about = document.getElementById('f-about').value.trim(); VOL.skills = document.getElementById('f-skills').value.split(',').map(s => s.trim()).filter(Boolean); VOL.experience = EXPS.map(entry => ({ role: entry.role, org: entry.org, date: entry.date, desc: entry.desc })); const full = [VOL.fn, VOL.ln].filter(Boolean).join(' ').trim(); VOL.fullName = full; VOL.full_name = full; localStorage.setItem('volunteerProfile', JSON.stringify(VOL)); Object.assign(PROFILE, { fn: VOL.fn, ln: VOL.ln, age: VOL.age, loc: VOL.loc, email: VOL.email, phone: VOL.phone, about: VOL.about, skills: VOL.skills, rating: PROFILE.rating, ratingCount: PROFILE.ratingCount, photoUrl: getProfilePhotoUrl(VOL) }); const init = (VOL.fn[0] || '') + (VOL.ln[0] || ''); document.getElementById('p-name').textContent = full || ''; document.getElementById('p-handle').textContent = VOL.email || 'N/A'; document.getElementById('p-about').textContent = VOL.about || 'No description provided.'; document.getElementById('pm-age').textContent = VOL.age || 'N/A'; document.getElementById('pm-loc').textContent = VOL.loc || 'N/A'; document.getElementById('pm-since').textContent = formatMemberSince(VOL); document.getElementById('sb-name').textContent = full || ''; document.getElementById('sb-role').textContent = full || ''; setAvatarContent('pav-display', getProfilePhotoUrl(VOL), init.toUpperCase() || 'V', full || 'Volunteer'); setAvatarContent('sb-initials', getProfilePhotoUrl(VOL), init.toUpperCase() || 'V', full || 'Volunteer'); setEditPhotoPreview(getProfilePhotoUrl(VOL), init.toUpperCase() || 'V', full || 'Volunteer'); renderSkills(); renderExpDisplay(); renderExpEdit(); showToast('Profile saved successfully', 'var(--green)'); switchTab('overview', null); }
 const PANEL_NAMES = ['overview','events','earnings','edit'];
 const CRUMB_MAP = { overview:'Overview', events:'My Events', earnings:'Earnings', edit:'Edit Profile' };
-function switchTab(name, triggerEl) { PANEL_NAMES.forEach(p => { document.getElementById('panel-' + p)?.classList.remove('active'); }); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.getElementById('panel-' + name)?.classList.add('active'); const tabBtn = document.querySelector(`.tab[data-tab="${name}"]`); if (tabBtn) tabBtn.classList.add('active'); const navBtn = document.querySelector(`.nav-item[data-tab="${name}"]`); if (navBtn) navBtn.classList.add('active'); document.getElementById('breadcrumb-label').textContent = CRUMB_MAP[name] || name; closeSidebar(); if (name === 'events') renderEvents(); }
+function switchTab(name, triggerEl) {
+  PANEL_NAMES.forEach(p => { document.getElementById('panel-' + p)?.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name)?.classList.add('active');
+  const tabBtn = document.querySelector(`.tab[data-tab="${name}"]`);
+  if (tabBtn) tabBtn.classList.add('active');
+  const navBtn = document.querySelector(`.nav-item[data-tab="${name}"]`);
+  if (navBtn) navBtn.classList.add('active');
+  document.getElementById('breadcrumb-label').textContent = CRUMB_MAP[name] || name;
+  closeSidebar();
+  
+  if (name === 'events') {
+    loadUserApplications().then(() => renderEvents()).catch(() => renderEvents());
+  } else if (name === 'earnings') {
+    loadUserApplications().then(() => renderEarnings()).catch(() => renderEarnings());
+  } else if (name === 'overview') {
+    loadUserApplications().then(() => {
+      renderEvents();
+      renderEarnings();
+    }).catch(() => {
+      renderEvents();
+      renderEarnings();
+    });
+  }
+}
 function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('show'); }
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
 function logout() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); localStorage.removeItem('stafflyApplications'); window.location.href = 'index.html'; }
@@ -1732,7 +1832,7 @@ document.querySelectorAll('button, a, .stat-block, .event-row, .activity-row, .b
       const shellDash = document.getElementById('shell-dashboard');
       if (shellDash) {
         // Load the original head-dashboard page unchanged inside an iframe so it preserves its own scripts and styles
-        shellDash.innerHTML = `<iframe src="head-dashboard.html" id="headDashboardIframe" style="width:100%;height:calc(100vh - 140px);min-height:600px;border:0;background:transparent;"></iframe>`;
+        shellDash.innerHTML = `<iframe src="head-dashboard.html?t=${Date.now()}" id="headDashboardIframe" style="width:100%;height:calc(100vh - 140px);min-height:600px;border:0;background:transparent;"></iframe>`;
       }
       
       // Ensure topbar reflects logged-in state

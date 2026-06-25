@@ -1659,3 +1659,33 @@
         min-width: unset;
     }
 }
+
+/* Event status button styling */
+.event-btn.accepted {
+    background: #1dff8f !important;
+    border-color: #1dff8f !important;
+    color: #000000 !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}
+.event-btn.rejected {
+    background: #ff5252 !important;
+    border-color: #ff5252 !important;
+    color: #ffffff !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}
+.event-btn.waitlisted {
+    background: #ffd000 !important;
+    border-color: #ffd000 !important;
+    color: #000000 !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}
+.event-btn.applied {
+    background: #555555 !important;
+    border-color: #555555 !important;
+    color: #ffffff !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}

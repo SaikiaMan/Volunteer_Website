@@ -802,7 +802,7 @@ document.querySelectorAll('button, a, .stat-block, .event-row, .activity-row, .b
       const shellDash = document.getElementById('shell-dashboard');
       if (shellDash) {
         // Load the original head-dashboard page unchanged inside an iframe so it preserves its own scripts and styles
-        shellDash.innerHTML = `<iframe src="head-dashboard.html" id="headDashboardIframe" style="width:100%;height:calc(100vh - 140px);min-height:600px;border:0;background:transparent;"></iframe>`;
+        shellDash.innerHTML = `<iframe src="head-dashboard.html?t=${Date.now()}" id="headDashboardIframe" style="width:100%;height:calc(100vh - 140px);min-height:600px;border:0;background:transparent;"></iframe>`;
       }
       
       // Ensure topbar reflects logged-in state
