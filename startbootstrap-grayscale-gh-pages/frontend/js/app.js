@@ -1,12 +1,16 @@
 // App Page JavaScript - Tab Management & Events Loading
 
 function normalizeApiBaseUrl(value) {
-    const trimmedValue = String(value || '').trim();
+    const host = (window.location && window.location.hostname) ? window.location.hostname : '';
+    const isLocal = (host === 'localhost' || host === '127.0.0.1' || host === '' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.'));
+    
+    if (isLocal) {
+        return 'http://localhost:3001/api';
+    }
 
+    const trimmedValue = String(value || '').trim();
     if (!trimmedValue) {
-        const host = (window.location && window.location.hostname) ? window.location.hostname : '';
-        if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:3001/api';
-        return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
+        return 'https://api.eventease.in/api';
     }
 
     if (/^https?:\/\//i.test(trimmedValue)) {
@@ -230,6 +234,15 @@ function createEventCard(event) {
     const safeTitle = String(event.title || 'Untitled Event').replace(/'/g, "\\'");
     const imageUrl = event.image_url || event.image || '';
 
+    // Check if the logged-in user is a Head
+    const storedRole = (localStorage.getItem('eventeaseRole') || '').toString().toLowerCase();
+    const rawProfile = localStorage.getItem('volunteerProfile');
+    let profileRole = '';
+    if (rawProfile) {
+      try { profileRole = (JSON.parse(rawProfile).role || '').toString().toLowerCase(); } catch (e) {}
+    }
+    const isHead = (storedRole === 'head' || profileRole === 'head');
+
     card.innerHTML = `
         <img src="${imageUrl}" alt="${event.title || ''}" class="event-image" onerror="this.style.display='none'">
         <div class="event-card-body">
@@ -250,9 +263,11 @@ function createEventCard(event) {
                     <strong>${availableSlots}</strong>
                 </div>
             </div>
+            ${isHead ? '' : `
             <button class="event-btn" onclick="applyForEvent(${event.id}, '${safeTitle}')">
                 Apply Now
             </button>
+            `}
         </div>
     `;
 
@@ -670,6 +685,8 @@ function loadProfile() {
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('volunteerProfile');
+        localStorage.removeItem('eventeaseRole');
+        localStorage.removeItem('stafflyApplications');
         window.location.href = 'index.html';
     }
 }

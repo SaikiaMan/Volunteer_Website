@@ -1,11 +1,16 @@
 // Global variables and functions - Define early so onclick handlers can find them
 function normalizeApiBaseUrl(value) {
+    const host = (window.location && window.location.hostname) ? window.location.hostname : '';
+    const isLocal = (host === 'localhost' || host === '127.0.0.1' || host === '' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.'));
+    
+    if (isLocal) {
+        return 'http://localhost:3001/api';
+    }
+
     const trimmedValue = String(value || '').trim();
 
     if (!trimmedValue) {
-        const host = (window.location && window.location.hostname) ? window.location.hostname : '';
-        if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:3001/api';
-        return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
+        return 'https://api.eventease.in/api';
     }
 
     if (/^https?:\/\//i.test(trimmedValue)) {
@@ -123,7 +128,7 @@ function showLogoutIfLogged() {
                 btn.className = 'topbar-btn';
                 btn.type = 'button';
                 btn.textContent = 'Sign Out';
-                btn.onclick = function() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); window.location.href = 'index.html'; };
+                btn.onclick = function() { localStorage.removeItem('volunteerProfile'); localStorage.removeItem('eventeaseRole'); localStorage.removeItem('stafflyApplications'); window.location.href = 'index.html'; };
                 topbar.appendChild(btn);
                 logoutBtn = btn;
             }

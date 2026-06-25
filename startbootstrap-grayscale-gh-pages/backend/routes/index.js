@@ -14,7 +14,7 @@ function createApiRouter({ supabase, upload }) {
 
     router.use(createPagesRouter());
     router.use(createVolunteersRouter({ supabase, upload }));
-    router.use(createEventsRouter({ supabase }));
+    router.use(createEventsRouter({ supabase, upload }));
     router.use(createApplicationsRouter({ supabase }));
 
     return router;

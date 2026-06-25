@@ -92,12 +92,24 @@ function normalizeEvent(event) {
 
 async function getEvents(req, res, supabase) {
     try {
+        console.log('--- GET EVENTS QUERY ---');
+        console.log('Supabase client url:', supabase.supabaseUrl);
+        console.log('Supabase client key starts with:', supabase.supabaseKey ? supabase.supabaseKey.substring(0, 10) + '...' : 'none');
+        
         const { data, error } = await supabase
             .from('Events')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error('Database query error in getEvents:', error);
+            throw error;
+        }
+
+        console.log('Raw database data retrieved count:', Array.isArray(data) ? data.length : 'not an array');
+        if (Array.isArray(data) && data.length > 0) {
+            console.log('Sample raw event id:', data[0].id, 'title:', data[0].title);
+        }
 
         const events = Array.isArray(data) ? data.map(normalizeEvent) : [];
         res.json(events);
@@ -109,9 +121,14 @@ async function getEvents(req, res, supabase) {
         });
     }
 }
-
 async function createEvent(req, res, supabase) {
     try {
+        console.log('================================');
+        console.log('POST /events/create received');
+        console.log('REQUEST BODY:');
+        console.log(JSON.stringify(req.body, null, 2));
+        console.log('================================');
+
         const {
             title,
             description,
@@ -143,9 +160,12 @@ async function createEvent(req, res, supabase) {
             });
         }
 
-        // Authorization: only Head users can create events
+        // Authorization
         const headIdentifier = created_by_email || created_by_user_id || created_by;
         const isHead = await isHeadUser(supabase, headIdentifier);
+
+        console.log('HEAD IDENTIFIER:', headIdentifier);
+        console.log('IS HEAD:', isHead);
 
         if (!isHead) {
             return res.status(403).json({
@@ -162,34 +182,66 @@ async function createEvent(req, res, supabase) {
             start_time: start_time || null,
             end_time: end_time || null,
             salary: salary != null ? Number(salary) : 0,
-            volunteer_limit: volunteer_limit != null ? Number(volunteer_limit) : (slots != null ? Number(slots) : 0),
-            waitlist_limit: waitlist_limit != null ? Number(waitlist_limit) : 0,
-            accepted_count: accepted_count != null ? Number(accepted_count) : (filledSlots != null ? Number(filledSlots) : 0),
-            waitlist_count: waitlist_count != null ? Number(waitlist_count) : 0,
+            volunteer_limit:
+                volunteer_limit != null
+                    ? Number(volunteer_limit)
+                    : (slots != null ? Number(slots) : 0),
+            waitlist_limit:
+                waitlist_limit != null
+                    ? Number(waitlist_limit)
+                    : 0,
+            accepted_count:
+                accepted_count != null
+                    ? Number(accepted_count)
+                    : (filledSlots != null ? Number(filledSlots) : 0),
+            waitlist_count:
+                waitlist_count != null
+                    ? Number(waitlist_count)
+                    : 0,
             status: status || 'upcoming',
-            image_url: image_url || image || 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&q=80&auto=format&fit=crop'
+            image_url:
+                image_url ||
+                image ||
+                'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&q=80&auto=format&fit=crop'
         };
+
+        console.log('EVENT DATA TO INSERT:');
+        console.log(JSON.stringify(eventData, null, 2));
 
         const { data, error } = await supabase
             .from('Events')
             .insert([eventData])
             .select();
 
-        if (error) throw error;
+        if (error) {
+            console.error('SUPABASE INSERT ERROR:');
+            console.error(JSON.stringify(error, null, 2));
+
+            return res.status(500).json({
+                success: false,
+                error: error.message,
+                details: error
+            });
+        }
+
+        console.log('EVENT CREATED SUCCESSFULLY');
+        console.log(JSON.stringify(data, null, 2));
 
         res.status(201).json({
             success: true,
             data: normalizeEvent(data[0])
         });
+
     } catch (err) {
-        console.error('createEvent error:', err);
+        console.error('CREATE EVENT EXCEPTION:');
+        console.error(err);
+
         res.status(500).json({
             success: false,
             error: err.message
         });
     }
 }
-
 async function getEventById(req, res, supabase) {
     try {
         const { id } = req.params;
@@ -221,8 +273,198 @@ async function getEventById(req, res, supabase) {
     }
 }
 
+async function uploadEventImage(req, res, supabase) {
+    try {
+        console.log('--- EVENT IMAGE UPLOAD ---');
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'No image file provided'
+            });
+        }
+
+        const fileName = `events/${Date.now()}_${req.file.originalname}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('volunteer_photos')
+            .upload(fileName, req.file.buffer, {
+                contentType: req.file.mimetype
+            });
+
+        if (uploadError) {
+            throw new Error(`Event photo upload failed: ${uploadError.message}`);
+        }
+
+        const { data: publicData } = supabase.storage
+            .from('volunteer_photos')
+            .getPublicUrl(fileName);
+
+        console.log('Event image uploaded successfully:', publicData.publicUrl);
+
+        res.json({
+            success: true,
+            imageUrl: publicData.publicUrl
+        });
+    } catch (err) {
+        console.error('uploadEventImage error:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+}
+
+async function updateEvent(req, res, supabase) {
+    try {
+        const { id } = req.params;
+        console.log(`PUT /events/update/${id} received`);
+        console.log('REQUEST BODY:', JSON.stringify(req.body, null, 2));
+
+        const {
+            title,
+            description,
+            location,
+            event_date,
+            date,
+            start_time,
+            end_time,
+            salary,
+            volunteer_limit,
+            slots,
+            waitlist_limit,
+            status,
+            image_url,
+            image,
+            created_by_email,
+            created_by_user_id,
+            created_by
+        } = req.body;
+
+        if (!title || !location || !(event_date || date)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Title, location, and event_date are required'
+            });
+        }
+
+        const headIdentifier = created_by_email || created_by_user_id || created_by;
+        const isHead = await isHeadUser(supabase, headIdentifier);
+
+        if (!isHead) {
+            return res.status(403).json({
+                success: false,
+                error: 'Only Head users can update events'
+            });
+        }
+
+        const eventData = {
+            title,
+            description: description || '',
+            location,
+            event_date: event_date || date,
+            start_time: start_time || null,
+            end_time: end_time || null,
+            salary: salary != null ? Number(salary) : 0,
+            volunteer_limit:
+                volunteer_limit != null
+                    ? Number(volunteer_limit)
+                    : (slots != null ? Number(slots) : 0),
+            waitlist_limit:
+                waitlist_limit != null
+                    ? Number(waitlist_limit)
+                    : 0,
+            status: status || 'upcoming',
+            image_url: image_url || image || null
+        };
+
+        const { data, error } = await supabase
+            .from('Events')
+            .update(eventData)
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('SUPABASE UPDATE ERROR:', error);
+            return res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Event not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: normalizeEvent(data[0])
+        });
+
+    } catch (err) {
+        console.error('UPDATE EVENT EXCEPTION:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+}
+
+async function deleteEvent(req, res, supabase) {
+    try {
+        const { id } = req.params;
+        const headIdentifier = req.query.created_by_email || req.query.created_by || req.query.created_by_user_id;
+
+        if (!headIdentifier) {
+            return res.status(400).json({
+                success: false,
+                error: 'Head identifier is required to verify permissions'
+            });
+        }
+
+        const isHead = await isHeadUser(supabase, headIdentifier);
+        if (!isHead) {
+            return res.status(403).json({
+                success: false,
+                error: 'Only Head users can delete events'
+            });
+        }
+
+        const { data, error } = await supabase
+            .from('Events')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('SUPABASE DELETE ERROR:', error);
+            return res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Event deleted successfully',
+            data: data
+        });
+    } catch (err) {
+        console.error('DELETE EVENT EXCEPTION:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+}
+
 module.exports = {
     getEvents,
     createEvent,
-    getEventById
+    getEventById,
+    uploadEventImage,
+    updateEvent,
+    deleteEvent
 };
