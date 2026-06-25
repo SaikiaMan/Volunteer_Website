@@ -1,3 +1,5 @@
+
+
 // Load profile data when page loads
 window.addEventListener('DOMContentLoaded', function() {
     const profileData = localStorage.getItem('volunteerProfile');
@@ -9,6 +11,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     try {
+        
         const data = JSON.parse(profileData);
         
         console.log('Loaded profile data:', data);

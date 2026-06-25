@@ -285,25 +285,48 @@ function filterEvents(category) {
 }
 
 // Apply for an event
-function applyForEvent(eventId, eventTitle) {
-    const userProfile = localStorage.getItem('volunteerProfile');
-    if (!userProfile) {
+async function applyForEvent(eventId, eventTitle) {
+    const rawProfile = localStorage.getItem('volunteerProfile');
+    if (!rawProfile) {
         alert('Please sign up first to apply for events.');
         switchTab('dashboard');
         return;
     }
 
-    // Persist the application locally until a dedicated backend apply endpoint is added.
+    let profile;
     try {
-        const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
-        if (!applications.find(app => app.eventId === eventId)) {
-            applications.push({ eventId, eventTitle, appliedAt: new Date().toISOString() });
-            localStorage.setItem('stafflyApplications', JSON.stringify(applications));
+        profile = JSON.parse(rawProfile);
+    } catch (error) {
+        alert('Invalid profile. Please log in again.');
+        return;
+    }
+
+    const applicantEmail = profile.email;
+    if (!applicantEmail) {
+        alert('Email not found in profile. Please log in again.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/applications/apply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                event_id: eventId,
+                applicant_email: applicantEmail
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to apply');
         }
+
         alert(`Successfully applied for "${eventTitle}"! You will receive confirmation soon.`);
     } catch (error) {
         console.error('Apply error:', error);
-        alert('Failed to apply. Please try again.');
+        alert(error.message || 'Failed to apply. Please try again.');
     }
 }
 
