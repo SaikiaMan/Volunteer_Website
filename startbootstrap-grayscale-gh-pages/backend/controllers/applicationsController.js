@@ -358,47 +358,7 @@ async function updateApplicationStatus(req, res, supabase) {
 
         const event = eventData[0];
 
-        // Enforce accepted limit
-        if (normalizedStatus === 'accepted') {
-            const { count: acceptedCount, error: countError } = await supabase
-                .from('Applications')
-                .select('*', { count: 'exact', head: true })
-                .eq('event_id', eventId)
-                .eq('status', 'accepted')
-                .neq('id', id);
 
-            if (countError) throw countError;
-
-            const volunteerLimit = event.volunteer_limit != null ? Number(event.volunteer_limit) : 0;
-
-            if (volunteerLimit > 0 && acceptedCount >= volunteerLimit) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Volunteer limit reached.'
-                });
-            }
-        }
-
-        // Enforce waitlist limit
-        if (normalizedStatus === 'waitlist') {
-            const { count: waitlistCount, error: countError } = await supabase
-                .from('Applications')
-                .select('*', { count: 'exact', head: true })
-                .eq('event_id', eventId)
-                .eq('status', 'waitlist')
-                .neq('id', id);
-
-            if (countError) throw countError;
-
-            const waitlistLimit = event.waitlist_limit != null ? Number(event.waitlist_limit) : 0;
-
-            if (waitlistLimit > 0 && waitlistCount >= waitlistLimit) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Waitlist full.'
-                });
-            }
-        }
 
         const updateData = {
             status: normalizedStatus

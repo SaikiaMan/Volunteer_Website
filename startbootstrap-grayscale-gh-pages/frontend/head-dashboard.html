@@ -390,6 +390,10 @@ body { font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"
   transition: border-color .18s, background .18s;
   position: relative;
 }
+.app-card.dropdown-active {
+  z-index: 100 !important;
+  opacity: 1 !important;
+}
 .app-card:hover { border-color: var(--border2); background: var(--surface2); }
 .app-card.accepted { border-left: 3px solid var(--green); }
 .app-card.rejected { border-left: 3px solid var(--red); opacity: .55; }
@@ -1555,7 +1559,7 @@ function renderAccepted() {
   const list = accepted.filter(v => v.name.toLowerCase().includes(q));
   const el = document.getElementById('acc-list');
   if (!el) return;
-  el.innerHTML = list.length ? list.map(v => appCardHTML(v, false)).join('') :
+  el.innerHTML = list.length ? list.map(v => appCardHTML(v, true)).join('') :
     `<div class="empty">No accepted volunteers yet. Go to Applications to accept volunteers.</div>`;
   const pct = Math.min((accepted.length/ACCEPT_TARGET)*100, 100);
   const progress = document.getElementById('acc-progress');
@@ -1571,17 +1575,7 @@ function renderWaitlist() {
   const list = waitlisted.filter(v => v.name.toLowerCase().includes(q));
   const el = document.getElementById('wait-list');
   if (!el) return;
-  el.innerHTML = list.length ? list.map(v => `<div class="app-card waitlisted" data-name="${v.name.toLowerCase()}">
-    <div class="card-avatar">${v.initials}</div>
-    <div class="card-info">
-      <div class="card-name">${v.name}</div>
-      <div class="card-meta"><span>Age ${v.age}</span><span>${v.location}</span><span class="card-rating">${starHTML(parseFloat(v.rating))}</span></div>
-    </div>
-    <div class="card-right">
-      <span class="status-badge waitlisted">Waitlisted</span>
-      <button class="topbar-btn" style="font-size:11px;padding:5px 12px" onclick="promoteById(${v.id})">Promote</button>
-    </div>
-  </div>`).join('') :
+  el.innerHTML = list.length ? list.map(v => appCardHTML(v, true)).join('') :
     `<div class="empty">Waitlist is empty.</div>`;
 }
 
@@ -1781,10 +1775,16 @@ function toggleMenu(e, id) {
   const dd = document.getElementById('dd-'+id);
   const isOpen = dd.classList.contains('open');
   closeAllDropdowns();
-  if (!isOpen) { dd.classList.add('open'); openDropdown = id; }
+  if (!isOpen) { 
+    dd.classList.add('open'); 
+    openDropdown = id; 
+    const card = document.getElementById('acard-' + id);
+    if (card) card.classList.add('dropdown-active');
+  }
 }
 function closeAllDropdowns() {
   document.querySelectorAll('.dropdown.open').forEach(d=>d.classList.remove('open'));
+  document.querySelectorAll('.app-card.dropdown-active').forEach(c=>c.classList.remove('dropdown-active'));
   openDropdown = null;
 }
 document.addEventListener('click', closeAllDropdowns);
