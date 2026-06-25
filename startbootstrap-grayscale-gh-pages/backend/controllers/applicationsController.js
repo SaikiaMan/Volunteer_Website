@@ -147,6 +147,8 @@ async function applyForEvent(req, res, supabase) {
         const applicationData = {
             event_id: Number(targetEventId),
             volunteer_id: volunteer.id,
+            user_id: volunteer.user_id || null,
+            email: volunteer.email || null,
             status: 'pending'
         };
 
@@ -185,13 +187,14 @@ async function getApplications(req, res, supabase) {
                     contact,
                     photo_url,
                     description,
-                    "past experience"
+                    "past experience",
+                    age
                 )
             `)
             .order('applied_at', { ascending: false });
 
-        if (eventId) {
-            query = query.eq('event_id', eventId);
+        if (eventId && !isNaN(Number(eventId))) {
+            query = query.eq('event_id', Number(eventId));
         }
 
         if (status) {
@@ -226,7 +229,8 @@ async function getApplicationById(req, res, supabase) {
                     contact,
                     photo_url,
                     description,
-                    "past experience"
+                    "past experience",
+                    age
                 ),
                 Events (title)
             `)
@@ -267,12 +271,12 @@ async function updateApplicationStatus(req, res, supabase) {
 
         const normalizedStatus = status.toLowerCase();
 
-        // Only Heads can change status
+        // Only authenticated volunteers/heads can change status
         const currentVolunteer = await getCurrentVolunteer(supabase, req);
-        if (!currentVolunteer || String(currentVolunteer.role || '').toLowerCase() !== 'head') {
-            return res.status(403).json({
+        if (!currentVolunteer) {
+            return res.status(401).json({
                 success: false,
-                error: 'Only Head users can update application status'
+                error: 'Authentication required to update application status'
             });
         }
 
@@ -357,8 +361,7 @@ async function updateApplicationStatus(req, res, supabase) {
 
         const updateData = {
             status: normalizedStatus,
-            decided_at: new Date().toISOString(),
-            decided_by: currentVolunteer.id
+            updated_at: new Date().toISOString()
         };
 
         const { data, error } = await supabase

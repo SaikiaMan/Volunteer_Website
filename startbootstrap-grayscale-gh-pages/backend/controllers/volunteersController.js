@@ -396,24 +396,83 @@ function createVolunteersController({ supabase }) {
 
         async getMyApplications(req, res) {
             try {
-                const volunteer = await getCurrentVolunteer(supabase, req);
-                if (!volunteer) {
-                    return res.status(401).json({ success: false, error: 'Authentication required' });
+                let volunteer = null;
+                let user = null;
+
+                // 1. Try Bearer token authentication
+                const authHeader = req.headers.authorization;
+                if (authHeader && authHeader.replace('Bearer ', '').trim() !== 'undefined' && authHeader.replace('Bearer ', '').trim() !== '') {
+                    const token = authHeader.replace('Bearer ', '');
+                    try {
+                        const { data: { user: authUser }, error: authError } = await getAuthClient().auth.getUser(token);
+                        if (!authError && authUser) {
+                            user = authUser;
+                            const { data: volunteerData } = await supabase
+                                .from('Volunteers')
+                                .select('*')
+                                .eq('user_id', user.id)
+                                .limit(1);
+                            if (volunteerData && volunteerData.length > 0) {
+                                volunteer = volunteerData[0];
+                            }
+                        }
+                    } catch (tokenErr) {
+                        console.warn('Bearer token verification failed, falling back to request parameters:', tokenErr);
+                    }
+                }
+
+                // 2. Query parameter fallbacks
+                const queryEmail = req.query.email || (volunteer ? volunteer.email : null);
+                const queryVolId = req.query.volunteer_id || (volunteer ? volunteer.id : null);
+
+                let volunteerId = volunteer ? volunteer.id : null;
+
+                if (!volunteerId && queryVolId && queryVolId !== 'undefined' && queryVolId !== 'null') {
+                    const parsedId = parseInt(queryVolId, 10);
+                    if (!isNaN(parsedId)) {
+                        volunteerId = parsedId;
+                    } else {
+                        const { data: volData } = await supabase
+                            .from('Volunteers')
+                            .select('id')
+                            .or(`id.eq.${queryVolId},user_id.eq.${queryVolId}`)
+                            .limit(1);
+                        if (volData && volData.length > 0) {
+                            volunteerId = volData[0].id;
+                        }
+                    }
+                }
+
+                if (!volunteerId && queryEmail && queryEmail !== 'undefined' && queryEmail !== 'null') {
+                    const { data: volData } = await supabase
+                        .from('Volunteers')
+                        .select('id')
+                        .eq('email', queryEmail)
+                        .limit(1);
+                    if (volData && volData.length > 0) {
+                        volunteerId = volData[0].id;
+                    }
+                }
+
+                if (!volunteerId) {
+                    return res.json([]);
                 }
 
                 const { data, error } = await supabase
                     .from('Applications')
                     .select(`
                         status,
+                        event_id,
                         Events (title)
                     `)
-                    .eq('volunteer_id', volunteer.id)
+                    .eq('volunteer_id', volunteerId)
                     .order('applied_at', { ascending: false });
 
                 if (error) throw error;
 
                 const result = (data || []).map(app => ({
                     event: app.Events?.title || 'Unknown Event',
+                    event_id: app.event_id,
                     status: app.status
                 }));
 
