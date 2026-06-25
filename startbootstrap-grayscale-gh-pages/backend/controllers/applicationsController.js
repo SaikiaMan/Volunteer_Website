@@ -124,6 +124,47 @@ async function applyForEvent(req, res, supabase) {
             });
         }
 
+        const { data: eventData, error: eventError } = await supabase
+            .from('Events')
+            .select('*')
+            .eq('id', Number(targetEventId))
+            .limit(1);
+
+        if (eventError) {
+            console.error('Check event error:', eventError);
+            throw eventError;
+        }
+
+        if (!eventData || eventData.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Event not found'
+            });
+        }
+
+        const targetEvent = eventData[0];
+        const eventStatus = String(targetEvent.status || '').toLowerCase();
+        if (eventStatus === 'completed' || eventStatus === 'past') {
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot apply for a completed event.'
+            });
+        }
+
+        const eventDateRaw = targetEvent.event_date || targetEvent.date;
+        if (eventDateRaw) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const eventDate = new Date(eventDateRaw);
+            eventDate.setHours(0, 0, 0, 0);
+            if (eventDate < today) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Cannot apply for an event whose date has passed.'
+                });
+            }
+        }
+
         // Duplicate check: only (event_id + volunteer_id)
         const { data: existing, error: existingError } = await supabase
             .from('Applications')
@@ -360,8 +401,7 @@ async function updateApplicationStatus(req, res, supabase) {
         }
 
         const updateData = {
-            status: normalizedStatus,
-            updated_at: new Date().toISOString()
+            status: normalizedStatus
         };
 
         const { data, error } = await supabase

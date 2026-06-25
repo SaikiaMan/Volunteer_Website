@@ -96,22 +96,46 @@ async function getEvents(req, res, supabase) {
         console.log('Supabase client url:', supabase.supabaseUrl);
         console.log('Supabase client key starts with:', supabase.supabaseKey ? supabase.supabaseKey.substring(0, 10) + '...' : 'none');
         
-        const { data, error } = await supabase
+        const { data: eventsData, error: eventsError } = await supabase
             .from('Events')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('Database query error in getEvents:', error);
-            throw error;
+        if (eventsError) {
+            console.error('Database query error in getEvents:', eventsError);
+            throw eventsError;
         }
 
-        console.log('Raw database data retrieved count:', Array.isArray(data) ? data.length : 'not an array');
-        if (Array.isArray(data) && data.length > 0) {
-            console.log('Sample raw event id:', data[0].id, 'title:', data[0].title);
+        console.log('Raw database data retrieved count:', Array.isArray(eventsData) ? eventsData.length : 'not an array');
+        const eventsList = Array.isArray(eventsData) ? eventsData : [];
+        const eventIds = eventsList.map(e => e.id);
+
+        const countMap = {};
+        if (eventIds.length > 0) {
+            const { data: countData, error: countError } = await supabase
+                .from('Applications')
+                .select('event_id')
+                .eq('status', 'accepted')
+                .in('event_id', eventIds);
+
+            if (!countError && Array.isArray(countData)) {
+                countData.forEach(app => {
+                    const eid = app.event_id;
+                    countMap[eid] = (countMap[eid] || 0) + 1;
+                });
+            }
         }
 
-        const events = Array.isArray(data) ? data.map(normalizeEvent) : [];
+        const events = eventsList.map(event => {
+            const count = countMap[event.id] || 0;
+            return normalizeEvent({
+                ...event,
+                accepted_count: count,
+                acceptedCount: count,
+                filledSlots: count
+            });
+        });
+
         res.json(events);
     } catch (err) {
         console.error('getEvents error:', err);
@@ -260,9 +284,22 @@ async function getEventById(req, res, supabase) {
             });
         }
 
+        const { count, error: countError } = await supabase
+            .from('Applications')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_id', id)
+            .eq('status', 'accepted');
+
+        const acceptedCount = !countError && count != null ? count : 0;
+
         res.json({
             success: true,
-            data: normalizeEvent(data)
+            data: normalizeEvent({
+                ...data,
+                accepted_count: acceptedCount,
+                acceptedCount: acceptedCount,
+                filledSlots: acceptedCount
+            })
         });
     } catch (err) {
         console.error('getEventById error:', err);

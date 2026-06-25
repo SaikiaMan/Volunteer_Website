@@ -681,7 +681,7 @@ body, body *, button, input, select, textarea {
         <div class="sum-item green">
           <div class="sum-val green" id="s-total">0</div>
           <div class="sum-label">Applications</div>
-          <div class="sum-sub">Pending review</div>
+          <div class="sum-sub">Total received</div>
         </div>
         <div class="sum-item green">
           <div class="sum-val green" id="s-accepted">0</div>
@@ -1376,15 +1376,33 @@ async function loadStateForEvent(eventId) {
     supervisors = Array.isArray(eventState.supervisors) ? eventState.supervisors : [];
     organisers = Array.isArray(eventState.organisers) ? eventState.organisers : [];
 
+    let targetVolunteersVal = DEFAULT_REQUIREMENTS.targetVolunteers;
+    if (eventState.requirements) {
+      targetVolunteersVal = Number.parseInt(eventState.requirements.targetVolunteers ?? eventState.requirements.volunteers, 10) || DEFAULT_REQUIREMENTS.targetVolunteers;
+    }
+    if (Array.isArray(allEvents)) {
+      const currentEvent = allEvents.find(e => Number(e.id) === Number(eventId));
+      if (currentEvent) {
+        const volunteerLimit = currentEvent.volunteer_limit != null ? Number(currentEvent.volunteer_limit) : 0;
+        const waitlistLimit = currentEvent.waitlist_limit != null ? Number(currentEvent.waitlist_limit) : 0;
+        targetVolunteersVal = volunteerLimit + waitlistLimit;
+      }
+    }
+
     if (eventState.requirements) {
       eventRequirements = {
-        targetVolunteers: Number.parseInt(eventState.requirements.targetVolunteers ?? eventState.requirements.volunteers, 10) || DEFAULT_REQUIREMENTS.targetVolunteers,
+        targetVolunteers: targetVolunteersVal,
         supervisors: Number.parseInt(eventState.requirements.supervisors, 10) || DEFAULT_REQUIREMENTS.supervisors,
         organisers: Number.parseInt(eventState.requirements.organisers, 10) || DEFAULT_REQUIREMENTS.organisers,
         configured: true
       };
     } else {
-      eventRequirements = { ...DEFAULT_REQUIREMENTS, configured: true };
+      eventRequirements = {
+        targetVolunteers: targetVolunteersVal,
+        supervisors: DEFAULT_REQUIREMENTS.supervisors,
+        organisers: DEFAULT_REQUIREMENTS.organisers,
+        configured: true
+      };
     }
     syncRequirementTargets();
     return true;

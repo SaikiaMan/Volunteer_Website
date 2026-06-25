@@ -626,7 +626,7 @@ function createShellEventCard(event) {
     const acceptedCount = event.accepted_count != null ? Number(event.accepted_count) : (event.filledSlots || 0);
     const availableSlots = Math.max(volunteerLimit - acceptedCount, 0);
     const salary = event.salary != null ? Number(event.salary) : (event.hourlyRate || event.hourly_rate || 0);
-    const category = String(event.category || event.status || 'Event').toLowerCase();
+    const categoryRaw = String(event.category || event.status || 'Event').toLowerCase();
     const categoryColors = {
         music: '#c084fc',
         tech: '#60a5fa',
@@ -635,16 +635,28 @@ function createShellEventCard(event) {
         upcoming: '#1dff8f',
         general: '#1dff8f'
     };
-    const accent = categoryColors[category] || categoryColors.general;
+    const accent = categoryColors[categoryRaw] || categoryColors.general;
     const safeTitle = String(event.title || 'Untitled Event').replace(/'/g, "\\'");
     const imageUrl = event.image_url || event.image || '';
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    let isPassed = false;
+    if (rawDate) {
+        const evDate = new Date(rawDate);
+        evDate.setHours(0, 0, 0, 0);
+        isPassed = evDate < now;
+    }
+    const isEventCompleted = String(event.status || '').toLowerCase() === 'completed' || String(event.status || '').toLowerCase() === 'past' || isPassed;
+
+    const category = ['active', 'completed', 'upcoming'].includes(categoryRaw) ? '' : (event.category || event.status || '');
 
     return `
         <div class="shell-card">
             <img src="${imageUrl}" alt="${event.title || ''}" class="shell-card-image" onerror="this.style.display='none'">
             <div class="shell-card-body">
                 <div class="shell-event-meta">
-                    <span style="color:${accent};text-transform:uppercase;font-size:11px;letter-spacing:.5px;">${event.category || event.status || 'Event'}</span>
+                    ${category ? `<span style="color:${accent};text-transform:uppercase;font-size:11px;letter-spacing:.5px;">${category}</span>` : ''}
                     <span>${formattedDate}${timeRange ? ' · ' + timeRange : ''}</span>
                 </div>
                 <div class="shell-event-title">${event.title || 'Untitled Event'}</div>
@@ -652,7 +664,7 @@ function createShellEventCard(event) {
                 <div class="shell-event-meta" style="margin-bottom:14px; flex-wrap:wrap;">
                     <span>📍 ${event.location || 'Location TBD'}</span>
                     <span>💰 ₹${salary}</span>
-                    <span>🎫 ${availableSlots} of ${volunteerLimit} spots left</span>
+                    ${isEventCompleted ? '' : `<span>🎫 ${availableSlots} of ${volunteerLimit} spots left</span>`}
                 </div>
                 <button class="shell-event-btn" type="button" onclick="applyForEvent(${event.id}, '${safeTitle}', this)">Apply Now</button>
             </div>
@@ -661,6 +673,20 @@ function createShellEventCard(event) {
 }
 
 async function applyForEvent(eventId, eventTitle, btn) {
+    // Frontend date & status validation checks
+    const targetEvent = shellEvents.find(e => Number(e.id) === Number(eventId));
+    if (targetEvent) {
+        const rawDate = targetEvent.date || targetEvent.event_date;
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const isPassed = rawDate ? new Date(rawDate) < now : false;
+        const isEventCompleted = String(targetEvent.status || '').toLowerCase() === 'completed' || String(targetEvent.status || '').toLowerCase() === 'past' || isPassed;
+        if (isEventCompleted) {
+            alert(isPassed ? 'Cannot apply for an event whose date has passed.' : 'Cannot apply for a completed event.');
+            return;
+        }
+    }
+
     const userProfile = localStorage.getItem('volunteerProfile');
     if (!userProfile) {
         alert('Please sign up first to apply for events.');

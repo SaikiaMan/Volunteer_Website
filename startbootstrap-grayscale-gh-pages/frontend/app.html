@@ -1234,13 +1234,46 @@ function renderShellEvents() {
     const grid = document.querySelector('#shell-events .shell-grid');
     if (!grid) return;
 
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
     let filtered = shellEvents;
     if (currentShellFilter === 'upcoming') {
-        filtered = shellEvents.filter(e => String(e.status || 'upcoming').toLowerCase() === 'upcoming');
+        filtered = shellEvents.filter(e => {
+            const status = String(e.status || 'upcoming').toLowerCase();
+            const rawDate = e.date || e.event_date;
+            let isPassed = false;
+            if (rawDate) {
+                const evDate = new Date(rawDate);
+                evDate.setHours(0, 0, 0, 0);
+                isPassed = evDate < now;
+            }
+            return status === 'upcoming' && !isPassed;
+        });
     } else if (currentShellFilter === 'active') {
-        filtered = shellEvents.filter(e => String(e.status || '').toLowerCase() === 'active');
+        filtered = shellEvents.filter(e => {
+            const status = String(e.status || '').toLowerCase();
+            const rawDate = e.date || e.event_date;
+            let isPassed = false;
+            if (rawDate) {
+                const evDate = new Date(rawDate);
+                evDate.setHours(0, 0, 0, 0);
+                isPassed = evDate < now;
+            }
+            return status === 'active' && !isPassed;
+        });
     } else if (currentShellFilter === 'past') {
-        filtered = shellEvents.filter(e => ['past', 'completed', 'cancelled'].includes(String(e.status || '').toLowerCase()));
+        filtered = shellEvents.filter(e => {
+            const status = String(e.status || '').toLowerCase();
+            const rawDate = e.date || e.event_date;
+            let isPassed = false;
+            if (rawDate) {
+                const evDate = new Date(rawDate);
+                evDate.setHours(0, 0, 0, 0);
+                isPassed = evDate < now;
+            }
+            return ['past', 'completed', 'cancelled'].includes(status) || isPassed;
+        });
     }
 
     if (!filtered.length) {
@@ -1294,9 +1327,11 @@ function createShellEventCard(event) {
         .filter(Boolean)
         .join(' - ') || '';
 
-    const volunteerLimit = event.volunteer_limit != null ? Number(event.volunteer_limit) : (event.slots || 0);
+    const volunteerLimitRaw = event.volunteer_limit != null ? Number(event.volunteer_limit) : (event.slots || 0);
+    const waitlistLimit = event.waitlist_limit != null ? Number(event.waitlist_limit) : 0;
+    const targetVolunteers = volunteerLimitRaw + waitlistLimit;
     const acceptedCount = event.accepted_count != null ? Number(event.accepted_count) : (event.filledSlots || 0);
-    const availableSlots = Math.max(volunteerLimit - acceptedCount, 0);
+    const availableSlots = Math.max(targetVolunteers - acceptedCount, 0);
     const salary = event.salary != null ? Number(event.salary) : (event.hourlyRate || event.hourly_rate || 0);
     const category = String(event.category || event.status || 'Event').toLowerCase();
     const categoryColors = {
@@ -1326,8 +1361,20 @@ function createShellEventCard(event) {
 
     // Dynamically query application status from database
     const userApp = signedIn && !isHead ? userApplications.find(a => Number(a.event_id) === Number(event.id)) : null;
+
+    // Check if event is completed or date is in the past
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    let isPassed = false;
+    if (rawDate) {
+        const evDate = new Date(rawDate);
+        evDate.setHours(0, 0, 0, 0);
+        isPassed = evDate < now;
+    }
+    const isEventCompleted = String(event.status || '').toLowerCase() === 'completed' || String(event.status || '').toLowerCase() === 'past' || isPassed;
+
     let btnHtml = '';
-    if (signedIn && !isHead) {
+    if (!isHead) {
         if (userApp) {
             const status = String(userApp.status || 'pending').toLowerCase();
             if (status === 'accepted') {
@@ -1339,16 +1386,22 @@ function createShellEventCard(event) {
             } else {
                 btnHtml = `<button class="shell-event-btn applied" type="button" disabled>Applied</button>`;
             }
+        } else if (isEventCompleted) {
+            btnHtml = `<button class="shell-event-btn applied" type="button" disabled>Completed</button>`;
         } else {
             btnHtml = `<button class="shell-event-btn" type="button" onclick="applyForEvent(${event.id}, '${safeTitle}', this)">Apply Now</button>`;
         }
     }
 
-    const categoryText = (event.category && String(event.category).toLowerCase() !== 'upcoming')
+    let categoryText = (event.category && String(event.category).toLowerCase() !== 'upcoming')
         ? event.category
         : (event.status && String(event.status).toLowerCase() !== 'upcoming')
             ? event.status
             : '';
+
+    if (['active', 'completed'].includes(String(categoryText).toLowerCase())) {
+        categoryText = '';
+    }
 
     return `
         <div class="shell-card">
@@ -1363,7 +1416,7 @@ function createShellEventCard(event) {
                 <div class="shell-event-meta" style="margin-bottom:14px; flex-wrap:wrap;">
                     <span>${event.location || 'Location TBD'}</span>
                     <span>₹${salary}</span>
-                    <span>${availableSlots} of ${volunteerLimit} spots left</span>
+                    ${isEventCompleted ? '' : `<span>${availableSlots} of ${targetVolunteers} spots left</span>`}
                 </div>
                 ${btnHtml}
                 ${isHead ? `
@@ -1381,6 +1434,25 @@ function createShellEventCard(event) {
 }
 
 async function applyForEvent(eventId, eventTitle, btn) {
+    // Frontend date & status validation checks
+    const targetEvent = shellEvents.find(e => Number(e.id) === Number(eventId));
+    if (targetEvent) {
+        const rawDate = targetEvent.date || targetEvent.event_date;
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        let isPassed = false;
+        if (rawDate) {
+            const evDate = new Date(rawDate);
+            evDate.setHours(0, 0, 0, 0);
+            isPassed = evDate < now;
+        }
+        const isEventCompleted = String(targetEvent.status || '').toLowerCase() === 'completed' || String(targetEvent.status || '').toLowerCase() === 'past' || isPassed;
+        if (isEventCompleted) {
+            alert(isPassed ? 'Cannot apply for an event whose date has passed.' : 'Cannot apply for a completed event.');
+            return;
+        }
+    }
+
     const rawProfile = localStorage.getItem('volunteerProfile');
     if (!rawProfile) {
         alert('Please sign up first to apply for events.');
