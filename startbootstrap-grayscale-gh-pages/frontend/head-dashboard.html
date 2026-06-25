@@ -993,7 +993,7 @@ function getApiBaseUrl() {
   if (isLocal) {
     return 'http://localhost:3001/api';
   }
-  return (window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || 'https://api.eventease.in/api').replace(/\/$/, '');
+  return (window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || 'https://volunteerwebsite-production-8fcc.up.railway.app/api').replace(/\/$/, '');
 }
 
 const API_BASE_URL = getApiBaseUrl();

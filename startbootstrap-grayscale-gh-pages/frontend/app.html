@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-api-base-url="https://api.eventease.in/api">
+<html lang="en" data-api-base-url="https://volunteerwebsite-production-8fcc.up.railway.app/api">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -674,7 +674,7 @@ function normalizeApiBaseUrl(value) {
 
     const trimmedValue = String(value || '').trim();
     if (!trimmedValue) {
-        return 'https://api.eventease.in/api';
+        return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
     }
     if (/^https?:\/\//i.test(trimmedValue)) {
         return trimmedValue.replace(/\/$/, '');
