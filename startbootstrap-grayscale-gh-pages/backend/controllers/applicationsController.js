@@ -188,8 +188,6 @@ async function applyForEvent(req, res, supabase) {
         const applicationData = {
             event_id: Number(targetEventId),
             volunteer_id: volunteer.id,
-            user_id: volunteer.user_id || null,
-            email: volunteer.email || null,
             status: 'pending'
         };
 
