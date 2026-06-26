@@ -294,6 +294,22 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 .shell-event-btn:hover { box-shadow:0 0 18px var(--green-glow); }
 .shell-event-btn:disabled { opacity:.5; cursor:not-allowed; }
 .shell-card-image { width:100%; height:160px; object-fit:cover; display:block; border-bottom:1px solid var(--border); }
+.clickable-card { cursor: pointer; transition: transform 0.22s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.22s ease, box-shadow 0.22s ease; }
+.clickable-card:hover { transform: translateY(-4px); border-color: var(--green-mid); box-shadow: 0 12px 30px rgba(29,255,143,0.12); }
+.shell-card-stats { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: 13px; }
+.shell-card-pay { color: var(--green); font-weight: 500; }
+.shell-card-spots { color: var(--muted3); }
+.shell-card-spots.completed { color: var(--red); }
+.event-details-modal { width: min(800px, 94%) !important; }
+.modal-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(8,8,8,0.66); backdrop-filter: blur(14px); z-index: 9999; overflow-y: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
+.modal-overlay.open { display: flex; }
+.modal { position: relative; background: linear-gradient(180deg, rgba(24,24,24,0.98), rgba(14,14,14,0.98)); border: 1px solid var(--border2); padding: 22px; border-radius: 20px; width: min(1040px, 94%); max-height: 88vh; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.72); display: flex; flex-direction: column; }
+.modal::before { content: ""; position: absolute; inset: 0; border-radius: 20px; padding: 1px; background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01)); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+.modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+.modal-title { font-family: var(--serif); font-size: 28px; line-height: 1; letter-spacing: -.4px; color: var(--white); }
+.modal-sub { font-size: 12px; color: var(--muted2); margin-top: 6px; }
+.modal-close { background: var(--surface2); border: 1px solid var(--border); color: var(--white); border-radius: 999px; padding: 9px 14px; font-family: var(--sans); font-size: 12px; cursor: pointer; }
+.modal-close:hover { border-color: var(--border2); background: var(--surface3); }
 .shell-chat { min-height:calc(100vh - 140px); display:grid; place-items:center; }
 .shell-coming { max-width:640px; width:100%; background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:36px 28px; text-align:center; }
 .shell-coming h2 { font-family:var(--serif); font-size:42px; letter-spacing:-1px; margin-bottom:10px; }
@@ -392,6 +408,49 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
   </div>
 </div>
 </section></div>
+<!-- EVENT DETAILS MODAL -->
+<div class="modal-overlay" id="eventDetailsOverlay" onclick="maybeCloseEventDetails(event)">
+  <div class="modal event-details-modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="det-title">Event Details</div>
+        <div class="modal-sub" id="det-category" style="text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Category</div>
+      </div>
+      <button class="modal-close" onclick="closeEventDetailsModal()">Close</button>
+    </div>
+    <div class="modal-body-scroll" style="overflow-y: auto; flex-grow: 1; padding-right: 8px; margin-bottom: 16px;">
+      <img id="det-image" src="" alt="Event Image" style="width: 100%; height: 280px; object-fit: cover; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border);" onerror="this.style.display='none'">
+      
+      <div class="det-info-list" style="margin-bottom: 28px; display: flex; flex-direction: column; gap: 16px;">
+        <div class="det-info-row">
+          <div style="font-size: 11px; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.5px;">Date & Time</div>
+          <div id="det-date-time" style="font-size: 14px; color: var(--white); margin-top: 2px;"></div>
+        </div>
+        <div class="det-info-row">
+          <div style="font-size: 11px; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.5px;">Location</div>
+          <div id="det-location" style="font-size: 14px; color: var(--white); margin-top: 2px;"></div>
+        </div>
+        <div class="det-info-row">
+          <div style="font-size: 11px; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.5px;">Compensation</div>
+          <div id="det-salary" style="font-size: 14px; font-weight: 500; color: var(--green); margin-top: 2px;"></div>
+        </div>
+        <div class="det-info-row">
+          <div style="font-size: 11px; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.5px;">Spots Available</div>
+          <div id="det-spots" style="font-size: 14px; color: var(--white); margin-top: 2px;"></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h4 style="font-family: var(--serif); font-size: 20px; color: var(--white); margin-bottom: 10px;">About this Event</h4>
+        <p id="det-description" style="font-size: 14px; line-height: 1.7; color: var(--muted3); white-space: pre-line;"></p>
+      </div>
+    </div>
+    <div class="modal-footer" id="det-footer" style="padding-top: 16px; border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: flex-end; align-items: center;">
+      <!-- Action buttons will be injected here dynamically -->
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">  <div class="toast-dot" id="toast-dot"></div>  <span id="toast-msg"></span></div>
 <script>
 // Ensure API base is available on this page
@@ -610,6 +669,44 @@ function renderShellEvents() {
 
 function createShellEventCard(event) {
     const rawDate = event.date || event.event_date;
+    const volunteerLimit = event.volunteer_limit != null ? Number(event.volunteer_limit) : (event.slots || 0);
+    const acceptedCount = event.accepted_count != null ? Number(event.accepted_count) : (event.filledSlots || 0);
+    const availableSlots = Math.max(volunteerLimit - acceptedCount, 0);
+    const salary = event.salary != null ? Number(event.salary) : (event.hourlyRate || event.hourly_rate || 0);
+    const imageUrl = event.image_url || event.image || '';
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    let isPassed = false;
+    if (rawDate) {
+        const evDate = new Date(rawDate);
+        evDate.setHours(0, 0, 0, 0);
+        isPassed = evDate < now;
+    }
+    const isEventCompleted = String(event.status || '').toLowerCase() === 'completed' || String(event.status || '').toLowerCase() === 'past' || isPassed;
+
+    return `
+        <div class="shell-card clickable-card" onclick="openEventDetailsModal(${event.id})">
+            <img src="${imageUrl}" alt="${event.title || ''}" class="shell-card-image" onerror="this.style.display='none'">
+            <div class="shell-card-body">
+                <div class="shell-event-title" style="margin-bottom: 12px; font-weight: 600; font-size: 17px; line-height: 1.35; color: var(--white);">${event.title || 'Untitled Event'}</div>
+                <div class="shell-card-stats">
+                    <span class="shell-card-pay">Pay: ₹${salary}</span>
+                    ${isEventCompleted ? '<span class="shell-card-spots completed">Completed</span>' : `<span class="shell-card-spots">Spots Left: ${availableSlots} out of ${volunteerLimit}</span>`}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function openEventDetailsModal(eventId) {
+    const event = shellEvents.find(evt => Number(evt.id) === Number(eventId));
+    if (!event) {
+        showToast('Event not found!', 'var(--red)');
+        return;
+    }
+
+    const rawDate = event.date || event.event_date;
     const formattedDate = rawDate
         ? new Date(rawDate).toLocaleDateString('en-US', {
             month: 'short',
@@ -626,19 +723,38 @@ function createShellEventCard(event) {
     const acceptedCount = event.accepted_count != null ? Number(event.accepted_count) : (event.filledSlots || 0);
     const availableSlots = Math.max(volunteerLimit - acceptedCount, 0);
     const salary = event.salary != null ? Number(event.salary) : (event.hourlyRate || event.hourly_rate || 0);
-    const categoryRaw = String(event.category || event.status || 'Event').toLowerCase();
-    const categoryColors = {
-        music: '#c084fc',
-        tech: '#60a5fa',
-        technology: '#60a5fa',
-        sports: '#ff4d4d',
-        upcoming: '#1dff8f',
-        general: '#1dff8f'
-    };
-    const accent = categoryColors[categoryRaw] || categoryColors.general;
-    const safeTitle = String(event.title || 'Untitled Event').replace(/'/g, "\\'");
-    const imageUrl = event.image_url || event.image || '';
 
+    const rawProfile = localStorage.getItem('volunteerProfile');
+    const storedRole = (localStorage.getItem('stafflyRole') || '').toString().toLowerCase();
+    let profileRole = '';
+    let signedIn = false;
+    if (rawProfile) {
+      try {
+        const parsed = JSON.parse(rawProfile);
+        profileRole = (parsed.role || '').toString().toLowerCase();
+        signedIn = parsed && Object.keys(parsed).length > 0;
+      } catch (e) {}
+    }
+    const isHead = signedIn && (storedRole === 'head' || profileRole === 'head');
+
+    // Populate modal contents
+    document.getElementById('det-title').textContent = event.title || 'Untitled Event';
+    document.getElementById('det-category').textContent = event.category || event.status || 'Event';
+    
+    const imageUrl = event.image_url || event.image || '';
+    const imgEl = document.getElementById('det-image');
+    if (imageUrl) {
+        imgEl.src = imageUrl;
+        imgEl.style.display = 'block';
+    } else {
+        imgEl.style.display = 'none';
+    }
+
+    document.getElementById('det-date-time').textContent = `${formattedDate}${timeRange ? ' at ' + timeRange : ''}`;
+    document.getElementById('det-location').textContent = event.location || 'Location TBD';
+    document.getElementById('det-salary').textContent = `₹${salary}`;
+    
+    // Check if event is completed
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     let isPassed = false;
@@ -648,28 +764,49 @@ function createShellEventCard(event) {
         isPassed = evDate < now;
     }
     const isEventCompleted = String(event.status || '').toLowerCase() === 'completed' || String(event.status || '').toLowerCase() === 'past' || isPassed;
+    document.getElementById('det-spots').textContent = isEventCompleted ? 'Completed' : `${availableSlots} of ${volunteerLimit} spots left`;
+    
+    document.getElementById('det-description').textContent = event.description || 'No description provided.';
 
-    const category = ['active', 'completed', 'upcoming'].includes(categoryRaw) ? '' : (event.category || event.status || '');
+    // Generate footer actions
+    const footer = document.getElementById('det-footer');
+    footer.innerHTML = '';
 
-    return `
-        <div class="shell-card">
-            <img src="${imageUrl}" alt="${event.title || ''}" class="shell-card-image" onerror="this.style.display='none'">
-            <div class="shell-card-body">
-                <div class="shell-event-meta">
-                    ${category ? `<span style="color:${accent};text-transform:uppercase;font-size:11px;letter-spacing:.5px;">${category}</span>` : ''}
-                    <span>${formattedDate}${timeRange ? ' · ' + timeRange : ''}</span>
-                </div>
-                <div class="shell-event-title">${event.title || 'Untitled Event'}</div>
-                <div class="shell-event-desc">${event.description || event.location || ''}</div>
-                <div class="shell-event-meta" style="margin-bottom:14px; flex-wrap:wrap;">
-                    <span>📍 ${event.location || 'Location TBD'}</span>
-                    <span>💰 ₹${salary}</span>
-                    ${isEventCompleted ? '' : `<span>🎫 ${availableSlots} of ${volunteerLimit} spots left</span>`}
-                </div>
-                <button class="shell-event-btn" type="button" onclick="applyForEvent(${event.id}, '${safeTitle}', this)">Apply Now</button>
-            </div>
-        </div>
-    `;
+    const safeTitle = String(event.title || 'Untitled Event').replace(/'/g, "\\'");
+
+    if (isHead) {
+        footer.innerHTML = `<span style="color: var(--muted3); font-size: 13px;">Coordinators cannot apply for events.</span>`;
+    } else {
+        // Volunteer actions
+        const applications = JSON.parse(localStorage.getItem('stafflyApplications') || '[]');
+        const userApp = applications.find(app => Number(app.eventId) === Number(event.id));
+        let btnHtml = '';
+        if (signedIn) {
+            if (userApp) {
+                btnHtml = `<button class="shell-event-btn applied" type="button" disabled style="width:auto; padding:10px 24px;">Applied</button>`;
+            } else if (isEventCompleted) {
+                btnHtml = `<button class="shell-event-btn applied" type="button" disabled style="width:auto; padding:10px 24px;">Completed</button>`;
+            } else {
+                btnHtml = `<button class="shell-event-btn" type="button" onclick="applyForEvent(${event.id}, '${safeTitle}', this)" style="width:auto; padding:10px 24px;">Apply Now</button>`;
+            }
+        } else {
+            // Sign in prompt
+            btnHtml = `<button class="shell-event-btn" type="button" onclick="closeEventDetailsModal(); alert('Please sign up first to apply for events.'); switchShellTab('dashboard', document.querySelector('.app-shell-tab[data-shell-tab=&quot;dashboard&quot;]'))" style="width:auto; padding:10px 24px;">Login to Apply</button>`;
+        }
+        footer.innerHTML = btnHtml;
+    }
+
+    document.getElementById('eventDetailsOverlay').classList.add('open');
+}
+
+function closeEventDetailsModal() {
+    document.getElementById('eventDetailsOverlay').classList.remove('open');
+}
+
+function maybeCloseEventDetails(e) {
+    if (e.target === document.getElementById('eventDetailsOverlay')) {
+        closeEventDetailsModal();
+    }
 }
 
 async function applyForEvent(eventId, eventTitle, btn) {

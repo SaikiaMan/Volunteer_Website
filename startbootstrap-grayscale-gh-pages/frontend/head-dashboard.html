@@ -769,6 +769,7 @@ body, body *, button, input, select, textarea {
             </div>
             <div class="panel-actions">
               <div class="progress" style="width:220px"><div class="progress-bar" id="sup-progress"></div></div>
+              <button class="topbar-btn" style="margin-right: 8px;" onclick="openReqTargetModal('supervisor')">Set Target</button>
               <button class="topbar-btn" onclick="openModal('supervisor')">Assign</button>
             </div>
           </div>
@@ -787,6 +788,7 @@ body, body *, button, input, select, textarea {
             </div>
             <div class="panel-actions">
               <div class="progress" style="width:220px"><div class="progress-bar" id="org-progress"></div></div>
+              <button class="topbar-btn" style="margin-right: 8px;" onclick="openReqTargetModal('organiser')">Set Target</button>
               <button class="topbar-btn" onclick="openModal('organiser')">Assign</button>
             </div>
           </div>
@@ -837,6 +839,29 @@ body, body *, button, input, select, textarea {
   </div>
 </div>
 
+<!-- SET REQUIREMENTS MODAL -->
+<div class="modal-overlay" id="reqTargetOverlay" onclick="maybeCloseReqTargetModal(event)">
+  <div class="modal" style="width: min(400px, 94%);" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="req-title">Set Requirement</div>
+        <div class="modal-sub">Specify how many are needed for this event.</div>
+      </div>
+      <button class="modal-close" onclick="closeReqTargetModal()">Close</button>
+    </div>
+    <form onsubmit="saveReqTarget(event)" style="display: flex; flex-direction: column; gap: 16px; margin-top: 10px;">
+      <input type="hidden" id="req-type">
+      <div class="requirements-field" style="display: flex; flex-direction: column; gap: 8px;">
+        <label for="req-num-input" style="font-size: 11px; text-transform: uppercase; color: var(--muted2); letter-spacing: 1px;" id="req-input-label">Number Needed</label>
+        <input id="req-num-input" type="number" min="0" required class="form-input" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-family: var(--sans); font-size: 13px; color: var(--white); outline: none;" placeholder="e.g. 5">
+      </div>
+      <div class="modal-foot" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 16px;">
+        <button type="button" class="btn-cancel" onclick="closeReqTargetModal()" style="background: none; border: 1px solid var(--border); color: var(--muted3); padding: 8px 16px; border-radius: 20px; font-size: 12px; cursor: pointer; transition: all .18s;">Cancel</button>
+        <button type="submit" class="btn-save" style="background: var(--green); color: var(--black); border: none; padding: 8px 20px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all .2s;">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <!-- CREATE EVENT MODAL -->
 <div class="modal-overlay" id="createEventOverlay" onclick="maybeCloseCreateEvent(event)">
@@ -1710,7 +1735,6 @@ async function completeAssignment() {
   const pending = apps.filter(v => v.status === 'pending');
   if (!pending.length) {
     switchTab('waitlist');
-    showToast('No pending volunteers left to waitlist', 'var(--amber)');
     return;
   }
 
@@ -2009,6 +2033,64 @@ function closeModal() {
 }
 function maybeCloseModal(e) {
   if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ── REQUIREMENT TARGET MODAL ──
+function openReqTargetModal(mode) {
+  if (!eventRequirements.configured) {
+    openRequirementsModal();
+    showToast('Set event requirements first', 'var(--amber)');
+    return;
+  }
+  document.getElementById('req-type').value = mode;
+  document.getElementById('req-title').textContent = mode === 'supervisor' ? 'Set Supervisors Target' : 'Set Organisers Target';
+  document.getElementById('req-input-label').textContent = mode === 'supervisor' ? 'Supervisors Needed' : 'Organisers Needed';
+  
+  const currentTarget = mode === 'supervisor' ? SUPERVISOR_TARGET : ORGANISER_TARGET;
+  document.getElementById('req-num-input').value = currentTarget;
+  document.getElementById('req-num-input').focus();
+
+  document.getElementById('reqTargetOverlay').classList.add('open');
+}
+
+function closeReqTargetModal() {
+  document.getElementById('reqTargetOverlay').classList.remove('open');
+}
+
+function maybeCloseReqTargetModal(e) {
+  if (e.target === document.getElementById('reqTargetOverlay')) {
+    closeReqTargetModal();
+  }
+}
+
+function saveReqTarget(e) {
+  if (e) e.preventDefault();
+  const mode = document.getElementById('req-type').value;
+  const num = parseInt(document.getElementById('req-num-input').value, 10);
+  if (isNaN(num) || num < 0) {
+    showToast('Please enter a valid number', 'var(--red)');
+    return;
+  }
+
+  if (mode === 'supervisor') {
+    SUPERVISOR_TARGET = num;
+    eventRequirements.supervisors = num;
+    const supT = document.getElementById('sup-target');
+    if (supT) supT.textContent = num;
+    renderSupervisors();
+    updateCounts();
+  } else {
+    ORGANISER_TARGET = num;
+    eventRequirements.organisers = num;
+    const orgT = document.getElementById('org-target');
+    if (orgT) orgT.textContent = num;
+    renderOrganisers();
+    updateCounts();
+  }
+
+  saveState();
+  closeReqTargetModal();
+  showToast('Requirement target updated successfully', 'var(--green)');
 }
 
 // ── FILTERS ──

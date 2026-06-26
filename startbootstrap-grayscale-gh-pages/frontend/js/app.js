@@ -261,79 +261,31 @@ function renderEventsGrid() {
 // Create event card element
 function createEventCard(event) {
     const card = document.createElement('div');
-    card.className = 'event-card';
+    card.className = 'event-card clickable-card';
+    card.onclick = () => {
+        if (typeof openEventDetailsModal === 'function') {
+            openEventDetailsModal(event.id);
+        }
+    };
 
     const volunteerLimit = event.volunteer_limit != null ? Number(event.volunteer_limit) : (event.slots || 0);
     const acceptedCount = event.accepted_count != null ? Number(event.accepted_count) : (event.filledSlots || 0);
     const availableSlots = Math.max(volunteerLimit - acceptedCount, 0);
-    const rawDate = event.date || event.event_date;
-    const formattedDate = rawDate
-        ? new Date(rawDate).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-          })
-        : 'Date TBD';
     const salary = event.salary != null ? Number(event.salary) : (event.hourlyRate || event.hourly_rate || 0);
-    const safeTitle = String(event.title || 'Untitled Event').replace(/'/g, "\\'");
     const imageUrl = event.image_url || event.image || '';
-
-    // Check if the logged-in user is a Head
-    const storedRole = (localStorage.getItem('eventeaseRole') || '').toString().toLowerCase();
-    const rawProfile = localStorage.getItem('volunteerProfile');
-    let profileRole = '';
-    if (rawProfile) {
-      try { profileRole = (JSON.parse(rawProfile).role || '').toString().toLowerCase(); } catch (e) {}
-    }
-    const isHead = (storedRole === 'head' || profileRole === 'head');
-
-    // Find if the volunteer has applied to this event
-    const userApp = userApplications.find(a => Number(a.event_id) === Number(event.id));
-    console.log('[DEBUG] createEventCard - event.id:', event.id, 'match userApp:', userApp, 'isHead:', isHead);
-    let actionBtnHtml = '';
-
-    if (isHead) {
-        actionBtnHtml = '';
-    } else if (userApp) {
-        const status = String(userApp.status).toLowerCase();
-        if (status === 'accepted') {
-            actionBtnHtml = `<button class="event-btn accepted" disabled>Accepted</button>`;
-        } else if (status === 'rejected') {
-            actionBtnHtml = `<button class="event-btn rejected" disabled>Rejected</button>`;
-        } else if (status === 'waitlist' || status === 'waitlisted') {
-            actionBtnHtml = `<button class="event-btn waitlisted" disabled>Waitlisted</button>`;
-        } else {
-            actionBtnHtml = `<button class="event-btn applied" disabled>Applied</button>`;
-        }
-    } else {
-        actionBtnHtml = `
-        <button class="event-btn" onclick="applyForEvent(${event.id}, '${safeTitle}')">
-            Apply Now
-        </button>
-        `;
-    }
 
     card.innerHTML = `
         <img src="${imageUrl}" alt="${event.title || ''}" class="event-image" onerror="this.style.display='none'">
         <div class="event-card-body">
-            <div class="event-date">
-                ${formattedDate}
-            </div>
-            <h3 class="event-title">${event.title || 'Untitled Event'}</h3>
-            <div class="event-location">
-                ${event.location || 'Location TBD'}
-            </div>
-            <div class="event-details">
-                <div class="detail-item">
-                    <span>Salary</span>
-                    <strong>₹${salary}</strong>
+            <h3 class="event-title" style="margin-bottom: 12px; font-weight: 600; font-size: 17px; line-height: 1.35;">${event.title || 'Untitled Event'}</h3>
+            <div class="event-details" style="display: flex; flex-direction: column; gap: 4px; margin-top: auto; border: none; padding: 0;">
+                <div class="detail-item" style="border: none; padding: 0; margin: 0;">
+                    <span style="color: var(--green); font-weight: 500; font-size: 13px;">Pay: ₹${salary}</span>
                 </div>
-                <div class="detail-item">
-                    <span>Available Slots</span>
-                    <strong>${availableSlots}</strong>
+                <div class="detail-item" style="border: none; padding: 0; margin: 0;">
+                    <span style="color: var(--muted3); font-size: 13px;">Spots Left: ${availableSlots} out of ${volunteerLimit}</span>
                 </div>
             </div>
-            ${actionBtnHtml}
         </div>
     `;
 
