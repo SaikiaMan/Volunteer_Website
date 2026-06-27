@@ -221,13 +221,7 @@ async function getApplications(req, res, supabase) {
             .select(`
                 *,
                 Volunteers (
-                    full_name,
-                    email,
-                    contact,
-                    photo_url,
-                    description,
-                    "past experience",
-                    age
+                    *
                 )
             `)
             .order('applied_at', { ascending: false });
@@ -263,13 +257,7 @@ async function getApplicationById(req, res, supabase) {
             .select(`
                 *,
                 Volunteers (
-                    full_name,
-                    email,
-                    contact,
-                    photo_url,
-                    description,
-                    "past experience",
-                    age
+                    *
                 ),
                 Events (title)
             `)

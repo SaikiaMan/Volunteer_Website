@@ -619,6 +619,17 @@ body, body *, button, input, select, textarea {
   color: #ffffff !important;
   opacity: 0.6;
 }
+
+/* Clickable card avatars */
+.card-avatar.clickable, .chip-avatar.clickable {
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.18s, box-shadow 0.18s;
+}
+.card-avatar.clickable:hover, .chip-avatar.clickable:hover {
+  transform: scale(1.08);
+  border-color: var(--green) !important;
+  box-shadow: 0 0 12px rgba(29, 255, 143, 0.4);
+}
 </style>
 </head>
 <body>
@@ -937,6 +948,64 @@ body, body *, button, input, select, textarea {
   </div>
 </div>
 
+<!-- VOLUNTEER DETAILS MODAL -->
+<div class="modal-overlay" id="volunteerDetailsOverlay" onclick="maybeCloseVolunteerDetailsModal(event)">
+  <div class="modal" style="width: min(640px, 94%); max-height: 85vh;" role="dialog" aria-modal="true">
+    <div class="modal-head" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+      <div>
+        <div class="modal-title">Volunteer Profile</div>
+        <div class="modal-sub">Comprehensive applicant overview</div>
+      </div>
+      <button class="modal-close" onclick="closeVolunteerDetailsModal()">Close</button>
+    </div>
+    
+    <div class="modal-body-content" style="overflow-y: auto; padding-right: 4px; margin-top: 16px; display: flex; flex-direction: column; gap: 20px;">
+      <!-- Profile Header Area -->
+      <div style="display: flex; align-items: center; gap: 20px; background: rgba(255,255,255,0.02); padding: 16px; border-radius: 16px; border: 1px solid var(--border);">
+        <div id="vdet-avatar-container"></div>
+        <div style="flex: 1; min-width: 0;">
+          <h3 id="vdet-name" style="font-family: var(--serif); font-size: 22px; color: var(--white); margin: 0; font-weight: 500;"></h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 6px; font-size: 13px; color: var(--muted3);">
+            <span id="vdet-age-loc"></span>
+            <span style="color: var(--border);">|</span>
+            <span id="vdet-email"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Strip -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+        <div style="background: rgba(29, 255, 143, 0.04); border: 1px solid rgba(29, 255, 143, 0.15); padding: 12px; border-radius: 12px; text-align: center;">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--green); letter-spacing: 0.5px; font-weight: 500;">Events Completed</div>
+          <div id="vdet-events" style="font-size: 24px; font-weight: 600; color: var(--white); margin-top: 4px;">0</div>
+        </div>
+        <div style="background: rgba(192, 132, 252, 0.04); border: 1px solid rgba(192, 132, 252, 0.15); padding: 12px; border-radius: 12px; text-align: center;">
+          <div style="font-size: 11px; text-transform: uppercase; color: #c084fc; letter-spacing: 0.5px; font-weight: 500;">Hours Logged</div>
+          <div id="vdet-hours" style="font-size: 24px; font-weight: 600; color: var(--white); margin-top: 4px;">0 hrs</div>
+        </div>
+      </div>
+
+      <!-- About Section -->
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <h4 style="font-size: 12px; text-transform: uppercase; color: var(--muted2); letter-spacing: 1px; margin: 0; font-weight: 600;">About</h4>
+        <p id="vdet-about" style="font-size: 13px; line-height: 1.5; color: var(--muted3); margin: 0; background: var(--surface2); padding: 12px; border-radius: 10px; border: 1px solid var(--border);"></p>
+      </div>
+
+      <!-- Skills Section -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <h4 style="font-size: 12px; text-transform: uppercase; color: var(--muted2); letter-spacing: 1px; margin: 0; font-weight: 600;">Skills</h4>
+        <div id="vdet-skills" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+      </div>
+
+      <!-- Past Experience Section -->
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+        <h4 style="font-size: 12px; text-transform: uppercase; color: var(--muted2); letter-spacing: 1px; margin: 0; font-weight: 600;">Past Experience</h4>
+        <div id="vdet-experience" style="font-size: 13px; line-height: 1.5; color: var(--muted3); background: var(--surface2); padding: 12px; border-radius: 10px; border: 1px solid var(--border); white-space: pre-wrap;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">
   <div class="toast-dot" id="toast-dot"></div>
@@ -949,7 +1018,18 @@ window.onerror = function(message, source, lineno, colno, error) {
   return false;
 };
 // ── STATE ──
-const AVATARS = ['', '', '', '', '', '', '', '', '', ''];
+const AVATARS = [
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80',
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&h=150&q=80',
+  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&h=150&q=80',
+  'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=150&h=150&q=80',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&h=150&q=80',
+  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&h=150&q=80',
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&h=150&q=80',
+  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&h=150&q=80'
+];
 const NAMES = ['Amandeep Kaur','Rohan Sharma','Priya Nair','Tanvir Singh','Manpreet Kaur',
   'Arjun Mehta','Sakshi Verma','Karan Bhatia','Neha Gupta','Rajveer Singh',
   'Divya Patel','Mohit Yadav','Anjali Tiwari','Simran Dhaliwal','Harpreet Gill',
@@ -1268,6 +1348,8 @@ function genApps(n) {
   const result = [];
   for (let i = 0; i < n; i++) {
     const name = NAMES[i % NAMES.length] + (i >= NAMES.length ? ` ${Math.floor(i/NAMES.length)+1}` : '');
+    const location = ['Ludhiana','Chandigarh','Amritsar','Delhi','Jalandhar'][i%5];
+    const completedEvents = Math.floor(Math.random()*12);
     result.push({
       id: i+1, name,
       age: 18 + Math.floor(Math.random()*20),
@@ -1275,8 +1357,13 @@ function genApps(n) {
       avatar: AVATARS[i % AVATARS.length],
       initials: name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
       status: 'pending',
-      events: Math.floor(Math.random()*12),
-      location: ['Ludhiana','Chandigarh','Amritsar','Delhi','Jalandhar'][i%5]
+      events: completedEvents,
+      hours: completedEvents * 4 + Math.floor(Math.random()*10),
+      location: location,
+      skills: [['First Aid', 'Communication', 'Event Planning'], ['Social Media', 'Photography', 'Design'], ['Crowd Management', 'Logistics', 'Leadership'], ['Tech Support', 'Data Entry', 'Organization']][i % 4],
+      experience: `Assisted in local community drives and managed registration desks for ${Math.floor(Math.random()*3)+1} events in ${location}.`,
+      about: `Enthusiastic and active volunteer looking to contribute to social and cultural events. Experienced in organizing and coordinating group activities.`,
+      email: `${name.toLowerCase().replace(/\s+/g, '.')}@example.com`
     });
   }
   return result;
@@ -1373,6 +1460,12 @@ async function loadStateForEvent(eventId) {
           const name = app.Volunteers?.full_name || 'Volunteer';
           const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
           const mappedStatus = app.status === 'waitlist' ? 'waitlisted' : app.status;
+          const rawSkills = app.Volunteers?.Skills || app.Volunteers?.skills;
+          const skillsArray = Array.isArray(rawSkills) 
+            ? rawSkills 
+            : (typeof rawSkills === 'string' ? rawSkills.split(',').map(s => s.trim()).filter(Boolean) : []);
+          
+          const completedEvents = app.Volunteers?.['Events completed'] || app.Volunteers?.eventsCompleted || 0;
           return {
             id: app.id,
             name: name,
@@ -1381,8 +1474,12 @@ async function loadStateForEvent(eventId) {
             avatar: app.Volunteers?.photo_url || '',
             initials: initials,
             status: mappedStatus,
-            events: 0,
-            location: app.Volunteers?.contact || 'Not Specified',
+            events: completedEvents,
+            hours: app.Volunteers?.['Hours logged'] || app.Volunteers?.hoursLogged || (completedEvents * 4),
+            skills: skillsArray.length ? skillsArray : ['Communication', 'Event Coordination'],
+            experience: app.Volunteers?.['past experience'] || app.Volunteers?.experience || 'No past experience listed.',
+            about: app.Volunteers?.description || app.Volunteers?.about || 'No description provided.',
+            location: app.Volunteers?.Location || app.Volunteers?.contact || 'Not Specified',
             email: app.Volunteers?.email || ''
           };
         });
@@ -1523,8 +1620,11 @@ function appCardHTML(v, showActions=true) {
   const statusCls = v.status === 'pending' ? 'pending' : v.status;
   const cardCls = v.status !== 'pending' ? v.status : '';
   const slotsLeft = Math.max(ACCEPT_TARGET - accepted.length, 0);
+  const avatarHtml = v.avatar
+    ? `<img src="${v.avatar}" alt="${v.name}" class="card-avatar clickable" style="object-fit: cover;" onclick="openVolunteerDetails(${v.id}, event)" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="card-avatar clickable" style="display:none" onclick="openVolunteerDetails(${v.id}, event)">${v.initials}</div>`
+    : `<div class="card-avatar clickable" onclick="openVolunteerDetails(${v.id}, event)">${v.initials}</div>`;
   return `<div class="app-card ${cardCls}" id="acard-${v.id}" data-name="${v.name.toLowerCase()}" data-status="${v.status}">
-    <div class="card-avatar">${v.initials}</div>
+    ${avatarHtml}
     <div class="card-info">
       <div class="card-name">${v.name}</div>
       <div class="card-meta">
@@ -1605,8 +1705,11 @@ function renderWaitlist() {
 }
 
 function chipHTML(v, type) {
+  const avatarHtml = v.avatar
+    ? `<img src="${v.avatar}" alt="${v.name}" class="chip-avatar clickable" style="object-fit: cover;" onclick="openVolunteerDetails(${v.id}, event)" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="chip-avatar clickable" style="display:none" onclick="openVolunteerDetails(${v.id}, event)">${v.initials}</div>`
+    : `<div class="chip-avatar clickable" onclick="openVolunteerDetails(${v.id}, event)">${v.initials}</div>`;
   return `<div class="assigned-chip">
-    <div class="chip-avatar">${v.initials}</div>
+    ${avatarHtml}
     <div style="flex:1;min-width:0">
       <div class="chip-name">${v.name}</div>
       <div class="chip-sub">${type === 'supervisor' ? 'Supervisor' : 'Organiser'}</div>
@@ -1917,8 +2020,11 @@ function renderModalList(list, preSelected, mode) {
     const isSel = modalSelected.has(v.id);
     const assignedClass = alreadyAssigned ? ' assigned' : '';
     const pillText = alreadyAssigned ? 'Assigned' : 'Pending';
+    const avatarHtml = v.avatar
+      ? `<img src="${v.avatar}" alt="${v.name}" class="card-avatar clickable" style="width:42px;height:42px;object-fit: cover;" onclick="openVolunteerDetails(${v.id}, event)" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="card-avatar clickable" style="width:42px;height:42px;font-size:12px;display:none" onclick="openVolunteerDetails(${v.id}, event)">${v.initials}</div>`
+      : `<div class="card-avatar clickable" style="width:42px;height:42px;font-size:12px" onclick="openVolunteerDetails(${v.id}, event)">${v.initials}</div>`;
     return `<div class="modal-item ${isSel ? 'selected' : ''}${assignedClass}" id="mi-${v.id}" onclick="toggleModalItem(${v.id},'${mode}')">
-      <div class="card-avatar" style="width:42px;height:42px;font-size:12px">${v.initials}</div>
+      ${avatarHtml}
       <div class="modal-item-body">
         <div class="modal-item-name">${v.name}</div>
         <div class="modal-item-meta">
@@ -2033,6 +2139,139 @@ function closeModal() {
 }
 function maybeCloseModal(e) {
   if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+/* ── VOLUNTEER DETAILS MODAL ACTIONS ── */
+function formatExperienceText(exp) {
+  if (!exp) return 'No past experience listed.';
+  
+  // If it's already an array
+  if (Array.isArray(exp)) {
+    return formatExpArray(exp);
+  }
+  
+  // If it's a string, try to parse it as JSON
+  if (typeof exp === 'string') {
+    const trimmed = exp.trim();
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return formatExpArray(parsed);
+        } else if (typeof parsed === 'object' && parsed !== null) {
+          return formatExpArray([parsed]);
+        }
+      } catch (e) {
+        // Fallback to raw string if parsing fails
+      }
+    }
+    return exp; // return raw string if not JSON
+  }
+  
+  return String(exp);
+}
+
+function formatExpArray(arr) {
+  if (!arr || !arr.length) return 'No past experience listed.';
+  return arr.map((item, idx) => {
+    const role = item.role || item.Role || '';
+    const org = item.org || item.organisation || item.organization || item.orgName || item.org_name || '';
+    const desc = item.desc || item.description || '';
+    const date = item.date || item.duration || item.time || '';
+    
+    let block = '';
+    if (arr.length > 1) {
+      block += `Experience #${idx + 1}:\n`;
+    }
+    block += `role: ${role || 'N/A'}\n`;
+    block += `organisation: ${org || 'N/A'}\n`;
+    block += `desc: ${desc || 'N/A'}\n`;
+    block += `date: ${date || 'N/A'}`;
+    
+    return block;
+  }).join('\n\n');
+}
+
+function openVolunteerDetails(volunteerId, event) {
+  if (event) {
+    event.stopPropagation();
+  }
+  // Find volunteer by ID in the applications list
+  const v = apps.find(a => a.id == volunteerId) 
+         || accepted.find(a => a.id == volunteerId) 
+         || waitlisted.find(a => a.id == volunteerId)
+         || supervisors.find(a => a.id == volunteerId)
+         || organisers.find(a => a.id == volunteerId);
+         
+  if (!v) {
+    showToast('Volunteer details not found', 'var(--red)');
+    return;
+  }
+  
+  // Set profile name
+  document.getElementById('vdet-name').textContent = v.name;
+  
+  // Set age and location
+  document.getElementById('vdet-age-loc').textContent = `Age ${v.age} • ${v.location}`;
+  
+  // Set email
+  document.getElementById('vdet-email').textContent = v.email || 'No email provided';
+  
+  // Set metrics
+  document.getElementById('vdet-events').textContent = v.events || 0;
+  document.getElementById('vdet-hours').textContent = `${v.hours || 0} hrs`;
+  
+  // Set About
+  document.getElementById('vdet-about').textContent = v.about || 'No about details provided.';
+  
+  // Set Experience
+  document.getElementById('vdet-experience').textContent = formatExperienceText(v.experience);
+  
+  // Set Skills
+  const skillsContainer = document.getElementById('vdet-skills');
+  skillsContainer.innerHTML = '';
+  if (v.skills && v.skills.length) {
+    const list = Array.isArray(v.skills) ? v.skills : String(v.skills).split(',').map(s => s.trim()).filter(Boolean);
+    list.forEach(skill => {
+      const chip = document.createElement('span');
+      chip.className = 'status-badge';
+      chip.style.borderColor = 'rgba(29, 255, 143, 0.2)';
+      chip.style.background = 'rgba(29, 255, 143, 0.05)';
+      chip.style.color = 'var(--green)';
+      chip.style.fontSize = '12px';
+      chip.style.padding = '5px 10px';
+      chip.textContent = skill;
+      skillsContainer.appendChild(chip);
+    });
+  } else {
+    skillsContainer.innerHTML = '<span style="font-size: 13px; color: var(--muted3);">No skills specified.</span>';
+  }
+  
+  // Set avatar image or initials fallback
+  const avatarContainer = document.getElementById('vdet-avatar-container');
+  if (v.avatar) {
+    avatarContainer.innerHTML = `
+      <img src="${v.avatar}" alt="${v.name}" class="card-avatar" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="card-avatar" style="width: 60px; height: 60px; font-size: 18px; display: none;">${v.initials}</div>
+    `;
+  } else {
+    avatarContainer.innerHTML = `
+      <div class="card-avatar" style="width: 60px; height: 60px; font-size: 18px;">${v.initials}</div>
+    `;
+  }
+  
+  // Open the overlay
+  document.getElementById('volunteerDetailsOverlay').classList.add('open');
+}
+
+function closeVolunteerDetailsModal() {
+  document.getElementById('volunteerDetailsOverlay').classList.remove('open');
+}
+
+function maybeCloseVolunteerDetailsModal(e) {
+  if (e.target === document.getElementById('volunteerDetailsOverlay')) {
+    closeVolunteerDetailsModal();
+  }
 }
 
 // ── REQUIREMENT TARGET MODAL ──
