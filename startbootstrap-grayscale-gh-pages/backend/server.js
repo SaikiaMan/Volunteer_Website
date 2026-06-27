@@ -22,7 +22,7 @@ const localAllowedOrigins = [
 
 const productionAllowedOrigins = [
     'https://volunteer-website-mu.vercel.app',
-    'https://volunteerwebsite-production-8fcc.up.railway.app',
+    'https://api.eventease.in',
     'https://eventease.in',
     'https://www.eventease.in'
 ];
@@ -41,7 +41,7 @@ function isAllowedOrigin(origin) {
     if (!origin || origin === 'null') return true;
     if (allowedOrigins.includes(origin)) return true;
     if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) return true;
-    if (/^https:\/\/volunteerwebsite-production-8fcc\.up\.railway\.app$/i.test(origin)) return true;
+    if (/^https:\/\/api\.eventease\.in$/i.test(origin)) return true;
     return /^https:\/\/([a-z0-9-]+\.)?eventease\.in$/i.test(origin);
 }
 

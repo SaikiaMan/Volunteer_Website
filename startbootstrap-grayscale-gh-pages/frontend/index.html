@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-api-base-url="https://volunteerwebsite-production-8fcc.up.railway.app/api">
+<html lang="en" data-api-base-url="https://api.eventease.in/api">
     <head>
         <script>
             // Synchronous check for immediate redirection to prevent flashing
@@ -21,7 +21,7 @@
                             const isLocal = (host === 'localhost' || host === '127.0.0.1' || host === '' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.'));
                             const apiBase = isLocal
                                 ? 'http://localhost:3001/api'
-                                : (window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || 'https://volunteerwebsite-production-8fcc.up.railway.app/api');
+                                : (window.API_BASE_URL || document.documentElement.dataset.apiBaseUrl || 'https://api.eventease.in/api');
                             const response = await fetch(`${apiBase}/volunteers/check-email`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },

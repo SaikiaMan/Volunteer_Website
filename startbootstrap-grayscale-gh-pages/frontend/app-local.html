@@ -458,7 +458,7 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
 function normalizeApiBaseUrl(value) {
     const trimmedValue = String(value || '').trim();
     if (!trimmedValue) {
-        return 'https://volunteerwebsite-production-8fcc.up.railway.app/api';
+        return 'https://api.eventease.in/api';
     }
     if (/^https?:\/\//i.test(trimmedValue)) {
         return trimmedValue.replace(/\/$/, '');
@@ -469,7 +469,7 @@ function normalizeApiBaseUrl(value) {
 const API_BASE_URL = normalizeApiBaseUrl(
     window.API_BASE_URL ||
     document.documentElement.dataset.apiBaseUrl ||
-    'https://volunteerwebsite-production-8fcc.up.railway.app/api'
+    'https://api.eventease.in/api'
 );
 
 function switchShellTab(tabName, triggerEl) {
