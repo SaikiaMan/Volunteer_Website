@@ -245,6 +245,7 @@ function createVolunteersController({ supabase }) {
                         'past experience': metadata['past experience'] || metadata.experience || null,
                         description: metadata.description || null,
                         photo_url: metadata.photo_url || metadata.photoUrl || null,
+                        Location: metadata.location || metadata.Location || null,
                         submitted_at: new Date().toISOString(),
                         role: metadata.role || 'volunteer',
                         approval_status: 'pending'
@@ -268,6 +269,9 @@ function createVolunteersController({ supabase }) {
                         error: 'Volunteer profile not found. Please try refreshing or contact support.'
                     });
                 }
+
+                volunteerData.created_at = authData.user.created_at;
+                volunteerData['Created at'] = authData.user.created_at;
 
                 res.json({
                     success: true,
@@ -309,6 +313,9 @@ function createVolunteersController({ supabase }) {
                 if (volunteerError || !volunteerData) {
                     return res.status(404).json({ success: false, error: 'Profile not found' });
                 }
+
+                volunteerData.created_at = user.created_at;
+                volunteerData['Created at'] = user.created_at;
 
                 res.json({
                     success: true,
@@ -363,6 +370,7 @@ function createVolunteersController({ supabase }) {
                     'past experience': metadata['past experience'] || metadata.experience || null,
                     description: metadata.description || null,
                     photo_url: metadata.photo_url || metadata.photoUrl || null,
+                    Location: metadata.location || metadata.Location || null,
                     submitted_at: new Date().toISOString(),
                     role: metadata.role || 'volunteer',
                     approval_status: 'pending'
@@ -382,8 +390,12 @@ function createVolunteersController({ supabase }) {
                     return res.status(500).json({ success: false, error: insertError.message });
                 }
 
+                const finalUser = inserted[0];
+                finalUser.created_at = user.created_at;
+                finalUser['Created at'] = user.created_at;
+
                 console.log(`Backend: Profile SUCCESSFULLY created for ${user.email}`);
-                res.json({ success: true, user: inserted[0] });
+                res.json({ success: true, user: finalUser });
             } catch (error) {
                 console.error('Backend: Unexpected createProfile error:', error);
                 res.status(500).json({ success: false, error: error.message });
@@ -530,11 +542,21 @@ function createVolunteersController({ supabase }) {
                 console.log('Raw request body:', JSON.stringify(req.body));
                 console.log('Available fields:', Object.keys(req.body));
 
-                const { volunteerId, email, fullName, age, phone, experience, description, photoUrl } = req.body;
+                const { volunteerId, email, fullName, age, phone, location, Location, skills, Skills, availability, Availability, experience, description, photoUrl, earnings, Earnings, eventsCompleted, 'Events completed': eventsCompletedCol, hoursLogged, 'Hours logged': hoursLoggedCol } = req.body;
+                const locationVal = location !== undefined ? location : Location;
+                const skillsVal = skills !== undefined ? skills : Skills;
+                const availabilityVal = availability !== undefined ? availability : Availability;
+                const earningsVal = earnings !== undefined ? earnings : Earnings;
+                const eventsCompletedVal = eventsCompleted !== undefined ? eventsCompleted : (eventsCompletedCol !== undefined ? eventsCompletedCol : undefined);
+                const hoursLoggedVal = hoursLogged !== undefined ? hoursLogged : (hoursLoggedCol !== undefined ? hoursLoggedCol : undefined);
 
                 console.log('Extracted volunteerId:', volunteerId);
                 console.log('Extracted email:', email);
                 console.log('Extracted fullName:', fullName);
+                console.log('Extracted locationVal:', locationVal);
+                console.log('Extracted skillsVal:', skillsVal);
+                console.log('Extracted availabilityVal:', availabilityVal);
+                console.log('Extracted metrics:', { earningsVal, eventsCompletedVal, hoursLoggedVal });
 
                 // Convert volunteerId to integer if provided
                 const idToFind = volunteerId ? (parseInt(volunteerId) || volunteerId) : null;
@@ -570,6 +592,12 @@ function createVolunteersController({ supabase }) {
                     full_name: fullName || undefined,
                     age: age ? parseInt(age) : undefined,
                     contact: phone || undefined,
+                    Location: locationVal || undefined,
+                    Skills: skillsVal || undefined,
+                    Availability: availabilityVal || undefined,
+                    Earnings: earningsVal !== undefined ? parseFloat(earningsVal) : undefined,
+                    'Events completed': eventsCompletedVal !== undefined ? parseInt(eventsCompletedVal) : undefined,
+                    'Hours logged': hoursLoggedVal !== undefined ? parseFloat(hoursLoggedVal) : undefined,
                     'past experience': experience || undefined,
                     description: description || undefined
                 };

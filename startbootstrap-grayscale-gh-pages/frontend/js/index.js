@@ -166,6 +166,45 @@ function normalizeVolunteerProfile(profile, fallbackEmail = '') {
     const [firstName, ...restName] = String(fullName || '').trim().split(/\s+/).filter(Boolean);
     const lastName = restName.join(' ');
 
+    let expVal = safeProfile.experience || safeProfile['past experience'];
+    if (typeof expVal === 'string') {
+        try {
+            const parsed = JSON.parse(expVal);
+            if (Array.isArray(parsed) || (parsed && typeof parsed === 'object')) {
+                expVal = parsed;
+            }
+        } catch (e) {
+            // Keep as string
+        }
+    }
+
+    let skillsVal = safeProfile.skills || safeProfile.Skills;
+    if (typeof skillsVal === 'string') {
+        try {
+            const parsed = JSON.parse(skillsVal);
+            if (Array.isArray(parsed)) {
+                skillsVal = parsed;
+            } else if (skillsVal.includes(',')) {
+                skillsVal = skillsVal.split(',').map(s => s.trim()).filter(Boolean);
+            }
+        } catch (e) {
+            if (skillsVal.includes(',')) {
+                skillsVal = skillsVal.split(',').map(s => s.trim()).filter(Boolean);
+            } else if (skillsVal.trim() === '') {
+                skillsVal = [];
+            } else {
+                skillsVal = [skillsVal.trim()];
+            }
+        }
+    }
+
+    const availVal = safeProfile.availability || safeProfile.Availability || 'Flexible';
+    const locVal = safeProfile.loc || safeProfile.location || safeProfile.Location || '';
+    const createdAtVal = safeProfile.created_at || safeProfile['Created at'] || safeProfile.createdAt || '';
+    const earningsVal = safeProfile.Earnings !== undefined ? Number(safeProfile.Earnings) : (safeProfile.earnings !== undefined ? Number(safeProfile.earnings) : 0);
+    const eventsCompletedVal = safeProfile['Events completed'] !== undefined ? Number(safeProfile['Events completed']) : (safeProfile.eventsCompleted !== undefined ? Number(safeProfile.eventsCompleted) : 0);
+    const hoursLoggedVal = safeProfile['Hours logged'] !== undefined ? Number(safeProfile['Hours logged']) : (safeProfile.hoursLogged !== undefined ? Number(safeProfile.hoursLogged) : 0);
+
     return {
         ...safeProfile,
         fullName: fullName || '',
@@ -176,6 +215,24 @@ function normalizeVolunteerProfile(profile, fallbackEmail = '') {
         lastName: safeProfile.lastName || safeProfile.ln || lastName || '',
         email: safeProfile.email || fallbackEmail || '',
         photoDataUrl: safeProfile.photoDataUrl || safeProfile.photo_url || safeProfile.photoUrl || safeProfile.avatarUrl || safeProfile.avatar || safeProfile.profilePic || safeProfile.profilePicUrl || '',
+        experience: expVal,
+        'past experience': expVal,
+        loc: locVal,
+        location: locVal,
+        Location: locVal,
+        skills: skillsVal,
+        Skills: skillsVal,
+        availability: availVal,
+        Availability: availVal,
+        created_at: createdAtVal,
+        'Created at': createdAtVal,
+        createdAt: createdAtVal,
+        Earnings: earningsVal,
+        earnings: earningsVal,
+        'Events completed': eventsCompletedVal,
+        eventsCompleted: eventsCompletedVal,
+        'Hours logged': hoursLoggedVal,
+        hoursLogged: hoursLoggedVal
     };
 }
 

@@ -392,7 +392,8 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
       <div id="panel-overview" class="panel active">
         <div class="summary-strip">          <div class="sum-item green">            <div class="sum-val green" id="s-applied">0</div>            <div class="sum-label">Events Applied</div>            <div class="sum-sub">+0 this month</div>          </div>          <div class="sum-item amber">            <div class="sum-val amber" id="s-earn">₹0</div>            <div class="sum-label">Total Earned</div>            <div class="sum-sub">Lifetime earnings</div>          </div>          <div class="sum-item blue">            <div class="sum-val blue" id="s-rating">0.0</div>            <div class="sum-label">Your Rating</div>            <div class="sum-sub">0 reviews</div>          </div>          <div class="sum-item green">            <div class="sum-val green" id="s-hours">0</div>            <div class="sum-label">Hours Logged</div>            <div class="sum-sub">Across 0 events</div>          </div>        </div>
         <div class="overview-grid">
-          <div class="profile-card">            <div class="profile-cover"><div class="profile-cover-grid"></div></div>            <div class="profile-body">              <div class="profile-av-row">                <div class="profile-av" id="pav-display">V</div>                <button class="profile-av-change" onclick="switchTab('edit',null)">Change photo</button>              </div>              <div class="profile-verified"><span class="profile-verified-dot"></span> Verified Volunteer</div>              <div class="profile-name" id="p-name">Volunteer</div>              <div class="profile-handle" id="p-handle">N/A</div>              <div class="rating-row">                <div class="rating-track"><div class="rating-fill" id="rating-fill" style="width:0%"></div></div>                <span class="rating-score" id="p-rating">0.0</span>                <span class="rating-reviews">(0 reviews)</span>              </div>              <div class="profile-divider"></div>              <div class="profile-meta">                <div class="profile-meta-row"><span class="k">Age</span><span class="v" id="pm-age">N/A</span></div>                <div class="profile-meta-row"><span class="k">Location</span><span class="v" id="pm-loc">N/A</span></div>                <div class="profile-meta-row"><span class="k">Events completed</span><span class="v" id="pm-events">0</span></div>                <div class="profile-meta-row"><span class="k">Hours logged</span><span class="v" id="pm-hours">0 hrs</span></div>                <div class="profile-meta-row"><span class="k">Member since</span><span class="v" id="pm-since">N/A</span></div>              </div>              <div class="profile-divider"></div>              <div class="profile-section-label">About</div>              <div class="profile-about" id="p-about">No description provided.</div>              <div class="profile-divider"></div>              <div class="profile-section-label">Skills</div>              <div class="skills-list" id="p-skills"></div>              <button class="profile-edit-btn" onclick="switchTab('edit',null)">Edit profile</button>            </div>          </div>
+          <div class="profile-card">            <div class="profile-cover"><div class="profile-cover-grid"></div></div>            <div class="profile-body">              <div class="profile-av-row">                <div class="profile-av" id="pav-display">V</div>                <button class="profile-av-change" onclick="switchTab('edit',null)">Change photo</button>              </div>              <div class="profile-verified"><span class="profile-verified-dot"></span> Verified Volunteer</div>              <div class="profile-name" id="p-name">Volunteer</div>              <div class="profile-handle" id="p-handle">N/A</div>              <div class="rating-row">                <div class="rating-track"><div class="rating-fill" id="rating-fill" style="width:0%"></div></div>                <span class="rating-score" id="p-rating">0.0</span>                <span class="rating-reviews">(0 reviews)</span>              </div>              <div class="profile-divider"></div>              <div class="profile-meta">                <div class="profile-meta-row"><span class="k">Age</span><span class="v" id="pm-age">N/A</span></div>                <div class="profile-meta-row"><span class="k">Location</span><span class="v" id="pm-loc">N/A</span></div>                <div class="profile-meta-row"><span class="k">Events completed</span><span class="v" id="pm-events">0</span></div>                <div class="profile-meta-row"><span class="k">Hours logged</span><span class="v" id="pm-hours">0 hrs</span></div>                <div class="profile-meta-row"><span class="k">Member since</span><span class="v" id="pm-since">N/A</span></div>
+                <div class="profile-meta-row"><span class="k">Availability</span><span class="v" id="pm-avail">N/A</span></div>              </div>              <div class="profile-divider"></div>              <div class="profile-section-label">About</div>              <div class="profile-about" id="p-about">No description provided.</div>              <div class="profile-divider"></div>              <div class="profile-section-label">Skills</div>              <div class="skills-list" id="p-skills"></div>              <button class="profile-edit-btn" onclick="switchTab('edit',null)">Edit profile</button>            </div>          </div>
           <div class="overview-right">
             <div class="section-block">              <div class="section-block-head">                <div class="section-block-title">Recent Activity</div>                <button class="section-block-action" onclick="switchTab('events',null)">View all</button>              </div>              <div class="activity-list" id="activity-list"></div>            </div>
             <div class="section-block">              <div class="section-block-head">                <div class="section-block-title">Past Experience</div>                <button class="section-block-action" onclick="switchTab('edit',null)">Edit</button>              </div>              <div class="exp-display-list" id="exp-display"></div>            </div>
@@ -510,27 +511,38 @@ const PROFILE = {
   fn: nameParts.firstName || VOL.firstName || '',
   ln: nameParts.lastName || VOL.lastName || '',
   age: VOL.age || '',
-  loc: VOL.location || VOL.city || VOL.address || VOL.loc || '',
+  loc: VOL.Location || VOL.location || VOL.city || VOL.address || VOL.loc || '',
   email: VOL.email || '',
   phone: VOL.phone || VOL.contact || '',
   about: VOL.description || VOL.about || '',
-  skills: Array.isArray(VOL.skills)
-    ? VOL.skills
-    : String(VOL.skills || '').split(',').map(s => s.trim()).filter(Boolean),
+  skills: Array.isArray(VOL.Skills || VOL.skills)
+    ? (VOL.Skills || VOL.skills)
+    : String(VOL.Skills || VOL.skills || '').split(',').map(s => s.trim()).filter(Boolean),
+  availability: VOL.Availability || VOL.availability || 'Flexible',
   rating: Number(VOL.rating || 0),
   ratingCount: Number(VOL.ratingCount || VOL.reviewCount || 0),
 };
 
-let EXPS = Array.isArray(VOL.experience)
-  ? VOL.experience.map((entry, index) => ({
+let rawExperience = VOL.experience || VOL['past experience'];
+if (typeof rawExperience === 'string') {
+  try {
+    const parsed = JSON.parse(rawExperience);
+    if (Array.isArray(parsed) || (parsed && typeof parsed === 'object')) {
+      rawExperience = parsed;
+    }
+  } catch (e) {}
+}
+
+let EXPS = Array.isArray(rawExperience)
+  ? rawExperience.map((entry, index) => ({
       id: index + 1,
       role: entry.role || entry.title || '',
       org: entry.org || entry.organization || '',
       date: entry.date || entry.year || '',
       desc: entry.desc || entry.description || '',
     }))
-  : typeof VOL.experience === 'string' && VOL.experience.trim()
-    ? [{ id: 1, role: 'Past Experience', org: 'Volunteer Profile', date: 'Current', desc: VOL.experience.trim() }]
+  : typeof rawExperience === 'string' && rawExperience.trim()
+    ? [{ id: 1, role: 'Past Experience', org: 'Volunteer Profile', date: 'Current', desc: rawExperience.trim() }]
     : [];
 
 const EVENTS = [];
@@ -547,7 +559,7 @@ function getProfilePhotoUrl(profile) {
 }
 
 function formatMemberSince(profile) {
-  const rawValue = profile.created_at || profile.createdAt || profile.joined_at || profile.joinedAt || profile.memberSince || profile.signupDate || profile.registeredAt || '';
+  const rawValue = profile['Created at'] || profile.created_at || profile.createdAt || profile.joined_at || profile.joinedAt || profile.memberSince || profile.signupDate || profile.registeredAt || '';
   if (!rawValue) return 'N/A';
   const date = new Date(rawValue);
   if (Number.isNaN(date.getTime())) return String(rawValue);
@@ -601,7 +613,7 @@ function updateTopbarAuthButtons() {
   }
 }
 
-function saveProfileHandler(btn) {
+async function saveProfileHandler(btn) {
   try {
     if (btn) {
       btn.disabled = true;
@@ -609,7 +621,11 @@ function saveProfileHandler(btn) {
     }
     // Call existing saveProfile which updates localStorage and UI
     try {
-      saveProfile();
+      if (typeof window.saveProfile === 'function') {
+        await window.saveProfile();
+      } else {
+        saveProfile();
+      }
     } catch (err) {
       console.error('saveProfile threw:', err);
       if (btn) {
@@ -895,6 +911,12 @@ function hydrateProfile() {
   document.getElementById('pm-age').textContent = PROFILE.age || 'N/A';
   document.getElementById('pm-loc').textContent = PROFILE.loc || 'N/A';
   document.getElementById('pm-since').textContent = memberSince;
+  const pmAvail = document.getElementById('pm-avail');
+  if (pmAvail) pmAvail.textContent = PROFILE.availability || 'Flexible';
+  const pmEvents = document.getElementById('pm-events');
+  if (pmEvents) pmEvents.textContent = VOL['Events completed'] || VOL.eventsCompleted || 0;
+  const pmHours = document.getElementById('pm-hours');
+  if (pmHours) pmHours.textContent = `${VOL['Hours logged'] || VOL.hoursLogged || 0} hrs`;
   document.getElementById('p-about').textContent = PROFILE.about || 'No description provided.';
   document.getElementById('f-fn').value = PROFILE.fn || '';
   document.getElementById('f-ln').value = PROFILE.ln || '';
@@ -904,6 +926,8 @@ function hydrateProfile() {
   document.getElementById('f-phone').value = PROFILE.phone || '';
   document.getElementById('f-about').value = PROFILE.about || '';
   document.getElementById('f-skills').value = PROFILE.skills.join(', ');
+  const fAvail = document.getElementById('f-avail');
+  if (fAvail) fAvail.value = PROFILE.availability || 'Flexible';
   const editPhotoInput = document.getElementById('editProfilePicEdit');
   if (editPhotoInput) {
     editPhotoInput.addEventListener('change', () => {
@@ -997,6 +1021,7 @@ window.saveProfile = async function() {
     VOL.phone = document.getElementById('f-phone').value.trim();
     VOL.about = document.getElementById('f-about').value.trim();
     VOL.skills = document.getElementById('f-skills').value.split(',').map(s => s.trim()).filter(Boolean);
+    VOL.availability = document.getElementById('f-avail').value;
     VOL.experience = EXPS.map(entry => ({ role: entry.role, org: entry.org, date: entry.date, desc: entry.desc }));
     const full = [VOL.fn, VOL.ln].filter(Boolean).join(' ').trim();
     VOL.fullName = full; VOL.full_name = full;
@@ -1008,6 +1033,9 @@ window.saveProfile = async function() {
     form.append('email', VOL.email || '');
     form.append('phone', VOL.phone || '');
     form.append('age', VOL.age || '');
+    form.append('location', VOL.loc || '');
+    form.append('skills', JSON.stringify(VOL.skills || []));
+    form.append('availability', VOL.availability || 'Flexible');
     form.append('experience', JSON.stringify(VOL.experience || []));
     form.append('description', VOL.about || '');
 
@@ -1063,6 +1091,13 @@ window.saveProfile = async function() {
       email: serverData.email || VOL.email,
       contact: serverData.contact || VOL.phone,
       phone: serverData.contact || VOL.phone,
+      Location: serverData.Location || VOL.loc,
+      location: serverData.Location || VOL.loc,
+      loc: serverData.Location || VOL.loc,
+      Skills: serverData.Skills || VOL.skills,
+      skills: serverData.Skills || VOL.skills,
+      Availability: serverData.Availability || VOL.availability,
+      availability: serverData.Availability || VOL.availability,
       'past experience': serverData['past experience'] || VOL.experience,
       experience: serverData['past experience'] || VOL.experience,
       description: serverData.description || VOL.about,
@@ -1081,11 +1116,15 @@ window.saveProfile = async function() {
       email: VOL.email || PROFILE.email,
       phone: VOL.phone || PROFILE.phone,
       about: VOL.about || PROFILE.about,
-      skills: Array.isArray(VOL.skills) ? VOL.skills : PROFILE.skills,
+      skills: Array.isArray(VOL.Skills || VOL.skills) ? (VOL.Skills || VOL.skills) : PROFILE.skills,
+      availability: VOL.Availability || VOL.availability || PROFILE.availability,
       rating: PROFILE.rating,
       ratingCount: PROFILE.ratingCount,
       photoUrl: serverData.photo_url || VOL.photo_url || getProfilePhotoUrl(VOL)
     });
+
+    const pmAvail = document.getElementById('pm-avail');
+    if (pmAvail) pmAvail.textContent = VOL.availability || 'Flexible';
 
     const init = (VOL.fn && VOL.fn[0] ? VOL.fn[0] : '') + (VOL.ln && VOL.ln[0] ? VOL.ln[0] : '');
     document.getElementById('p-name').textContent = full || '';
