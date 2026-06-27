@@ -917,10 +917,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         loadDashboard();
                     }, 1000);
                 } else {
-                    // Email not found - ask to signup
                     if (loginErrorMessage) {
                         loginErrorMessage.classList.remove('d-none');
-                        loginErrorMessage.textContent = result.error || 'Invalid email or password.';
+                        const loginErrorText = document.getElementById('loginErrorText');
+                        if (loginErrorText) {
+                            loginErrorText.textContent = result.error || 'Invalid email or password.';
+                        } else {
+                            loginErrorMessage.textContent = result.error || 'Invalid email or password.';
+                        }
                     }
                 }
             } catch (error) {

@@ -552,7 +552,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.error('Login error:', error);
                 if (loginErrorMessage) {
                     if (loginErrorText) {
-                        loginErrorText.innerHTML = error.message + ' <a href="javascript:void(0);" onclick="closeLoginForm(); openVolunteerForm();" style="color: #64a19d; text-decoration: underline;">Sign up here</a>';
+                        if (error.message.toLowerCase() === 'wrong password') {
+                            loginErrorText.textContent = 'wrong password';
+                        } else {
+                            loginErrorText.innerHTML = error.message + ' <a href="javascript:void(0);" onclick="closeLoginForm(); openVolunteerForm();" style="color: #64a19d; text-decoration: underline;">Sign up here</a>';
+                        }
                     }
                     loginErrorMessage.classList.remove('d-none');
                 }

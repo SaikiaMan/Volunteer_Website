@@ -171,16 +171,57 @@ function createVolunteersController({ supabase }) {
                 });
 
                 if (authError) {
-                    if (authError.message.toLowerCase().includes('email not confirmed') || authError.status === 400) {
+                    const errMsg = authError.message.toLowerCase();
+                    if (errMsg.includes('email not confirmed') || errMsg.includes('email not verified')) {
                         return res.status(401).json({
                             success: false,
                             error: 'EMAIL NOT VERIFIED'
                         });
                     }
-                    
+
+                    // Check if the email exists in our system to differentiate wrong password vs. unregistered email
+                    const cleanedEmail = String(email || '').trim();
+                    let emailExists = false;
+
+                    // 1. Check Volunteers table
+                    try {
+                        const { data: vdata, error: verror } = await supabase
+                            .from('Volunteers')
+                            .select('id')
+                            .ilike('email', cleanedEmail)
+                            .limit(1);
+                        if (!verror && vdata && vdata.length > 0) {
+                            emailExists = true;
+                        }
+                    } catch (e) {
+                        console.error('Login email existence check in Volunteers failed:', e);
+                    }
+
+                    // 2. Check Supabase Auth users via admin API if available
+                    if (!emailExists) {
+                        try {
+                            if (supabase.auth && supabase.auth.admin && typeof supabase.auth.admin.getUserByEmail === 'function') {
+                                const { data: authUser, error: authErr } = await supabase.auth.admin.getUserByEmail(cleanedEmail);
+                                if (!authErr && authUser) {
+                                    emailExists = true;
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Login email existence check in Auth failed:', e);
+                        }
+                    }
+
+                    if (emailExists) {
+                        // Email exists, so the login failure (due to credentials) means wrong password
+                        return res.status(401).json({
+                            success: false,
+                            error: 'wrong password'
+                        });
+                    }
+
                     return res.status(401).json({
                         success: false,
-                        error: authError.message
+                        error: 'Email not registered. Please sign up first.'
                     });
                 }
 
