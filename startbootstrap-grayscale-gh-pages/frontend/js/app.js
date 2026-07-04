@@ -280,7 +280,7 @@ function createEventCard(event) {
             <h3 class="event-title" style="margin-bottom: 12px; font-weight: 600; font-size: 17px; line-height: 1.35;">${event.title || 'Untitled Event'}</h3>
             <div class="event-details" style="display: flex; flex-direction: column; gap: 4px; margin-top: auto; border: none; padding: 0;">
                 <div class="detail-item" style="border: none; padding: 0; margin: 0;">
-                    <span style="color: var(--green); font-weight: 500; font-size: 13px;">Pay: ₹${salary}</span>
+                    <span style="color: var(--green); font-weight: 500; font-size: 13px;">Pay: ₹${salary} per day</span>
                 </div>
                 <div class="detail-item" style="border: none; padding: 0; margin: 0;">
                     <span style="color: var(--muted3); font-size: 13px;">Spots Left: ${availableSlots} out of ${volunteerLimit}</span>

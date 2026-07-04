@@ -904,8 +904,25 @@ body, body *, button, input, select, textarea {
           <input id="ce-location" type="text" required placeholder="City, Venue">
         </div>
         <div class="requirements-field">
-          <label for="ce-date">Event Date *</label>
-          <input id="ce-date" type="date" required>
+          <label for="ce-status">Status</label>
+          <select id="ce-status" class="filter-select" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--white);">
+            <option value="upcoming">Upcoming</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="requirements-field">
+          <label for="ce-start-date">Start Date *</label>
+          <input id="ce-start-date" type="date" required>
+        </div>
+        <div class="requirements-field">
+          <label for="ce-end-date">End Date</label>
+          <input id="ce-end-date" type="date">
+        </div>
+        <div class="requirements-field">
+          <label for="ce-salary">Salary (₹)</label>
+          <input id="ce-salary" type="number" min="0" step="1" placeholder="500">
         </div>
         <div class="requirements-field">
           <label for="ce-start-time">Start Time</label>
@@ -916,25 +933,12 @@ body, body *, button, input, select, textarea {
           <input id="ce-end-time" type="time">
         </div>
         <div class="requirements-field">
-          <label for="ce-salary">Salary (₹)</label>
-          <input id="ce-salary" type="number" min="0" step="1" placeholder="500">
-        </div>
-        <div class="requirements-field">
           <label for="ce-volunteer-limit">Volunteer Limit *</label>
           <input id="ce-volunteer-limit" type="number" min="1" step="1" required placeholder="30">
         </div>
         <div class="requirements-field">
           <label for="ce-waitlist-limit">Waitlist Limit</label>
           <input id="ce-waitlist-limit" type="number" min="0" step="1" placeholder="0">
-        </div>
-        <div class="requirements-field">
-          <label for="ce-status">Status</label>
-          <select id="ce-status" class="filter-select" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--white);">
-            <option value="upcoming">Upcoming</option>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
         </div>
       </div>
       <div class="requirements-field" style="margin-top:6px;">
@@ -1155,7 +1159,8 @@ async function saveCreateEvent(e) {
 
   const title = document.getElementById('ce-title').value.trim();
   const location = document.getElementById('ce-location').value.trim();
-  const eventDate = document.getElementById('ce-date').value;
+  const startDate = document.getElementById('ce-start-date').value;
+  const endDate = document.getElementById('ce-end-date').value;
   const startTime = document.getElementById('ce-start-time').value;
   const endTime = document.getElementById('ce-end-time').value;
   const salary = document.getElementById('ce-salary').value;
@@ -1165,7 +1170,7 @@ async function saveCreateEvent(e) {
   const description = document.getElementById('ce-description').value.trim();
   const imageUrl = document.getElementById('ce-image-url').value.trim();
 
-  if (!title || !location || !eventDate || !volunteerLimit) {
+  if (!title || !location || !startDate || !volunteerLimit) {
     showToast('Please fill in all required fields.', 'var(--amber)');
     return;
   }
@@ -1183,7 +1188,8 @@ async function saveCreateEvent(e) {
       body: JSON.stringify({
         title,
         location,
-        event_date: eventDate,
+        start_date: startDate,
+        end_date: endDate || null,
         start_time: startTime || null,
         end_time: endTime || null,
         salary: salary ? Number(salary) : 0,
@@ -1252,10 +1258,18 @@ async function selectEvent(eventId) {
     const dateEl = document.getElementById('currentEventDate');
     if (nameEl) nameEl.textContent = evt.title || 'Untitled Event';
     if (dateEl) {
-      const rawDate = evt.date || evt.event_date;
-      const formattedDate = rawDate
-        ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : 'Date TBD';
+      const rawDate = evt.start_date || evt.date || evt.event_date;
+      const rawEndDate = evt.end_date;
+      let formattedDate = 'Date TBD';
+      if (rawDate) {
+        const startFormatted = new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        if (rawEndDate && new Date(rawDate).toDateString() !== new Date(rawEndDate).toDateString()) {
+          const endFormatted = new Date(rawEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          formattedDate = `${startFormatted} - ${endFormatted}`;
+        } else {
+          formattedDate = startFormatted;
+        }
+      }
       dateEl.textContent = `${formattedDate}${evt.location ? ', ' + evt.location : ''}`;
     }
   }
@@ -1298,10 +1312,18 @@ async function loadCurrentEvent() {
     const currentEvent = allEvents.find(e => Number(e.id) === Number(selectedEventId));
     if (currentEvent) {
       nameEl.textContent = currentEvent.title || 'Untitled Event';
-      const rawDate = currentEvent.date || currentEvent.event_date;
-      const formattedDate = rawDate
-        ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : 'Date TBD';
+      const rawDate = currentEvent.start_date || currentEvent.date || currentEvent.event_date;
+      const rawEndDate = currentEvent.end_date;
+      let formattedDate = 'Date TBD';
+      if (rawDate) {
+        const startFormatted = new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        if (rawEndDate && new Date(rawDate).toDateString() !== new Date(rawEndDate).toDateString()) {
+          const endFormatted = new Date(rawEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          formattedDate = `${startFormatted} - ${endFormatted}`;
+        } else {
+          formattedDate = startFormatted;
+        }
+      }
       dateEl.textContent = `${formattedDate}${currentEvent.location ? ', ' + currentEvent.location : ''}`;
     }
 

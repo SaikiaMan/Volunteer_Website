@@ -672,8 +672,25 @@ body, body *, button, input, select, textarea {
           <input id="ee-location" type="text" required placeholder="City, Venue">
         </div>
         <div class="requirements-field">
-          <label for="ee-date">Event Date *</label>
-          <input id="ee-date" type="date" required>
+          <label for="ee-status">Status</label>
+          <select id="ee-status" class="filter-select" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--white);">
+            <option value="upcoming">Upcoming</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="requirements-field">
+          <label for="ee-start-date">Start Date *</label>
+          <input id="ee-start-date" type="date" required>
+        </div>
+        <div class="requirements-field">
+          <label for="ee-end-date">End Date</label>
+          <input id="ee-end-date" type="date">
+        </div>
+        <div class="requirements-field">
+          <label for="ee-salary">Salary (₹)</label>
+          <input id="ee-salary" type="number" min="0" step="1" placeholder="500">
         </div>
         <div class="requirements-field">
           <label for="ee-start-time">Start Time</label>
@@ -684,25 +701,12 @@ body, body *, button, input, select, textarea {
           <input id="ee-end-time" type="time">
         </div>
         <div class="requirements-field">
-          <label for="ee-salary">Salary (₹)</label>
-          <input id="ee-salary" type="number" min="0" step="1" placeholder="500">
-        </div>
-        <div class="requirements-field">
           <label for="ee-volunteer-limit">Volunteer Limit *</label>
           <input id="ee-volunteer-limit" type="number" min="1" step="1" required placeholder="30">
         </div>
         <div class="requirements-field">
           <label for="ee-waitlist-limit">Waitlist Limit</label>
           <input id="ee-waitlist-limit" type="number" min="0" step="1" placeholder="0">
-        </div>
-        <div class="requirements-field">
-          <label for="ee-status">Status</label>
-          <select id="ee-status" class="filter-select" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--white);">
-            <option value="upcoming">Upcoming</option>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
         </div>
       </div>
       <div class="requirements-field" style="margin-top:6px;">
@@ -796,20 +800,36 @@ function openEditEventModal(eventId, e) {
     document.getElementById('ee-title').value = event.title || '';
     document.getElementById('ee-location').value = event.location || '';
     
-    // Date formatting (YYYY-MM-DD)
-    const rawDate = event.event_date || event.date;
-    if (rawDate) {
+    // Start Date formatting (YYYY-MM-DD)
+    const rawStartDate = event.start_date || event.event_date || event.date;
+    if (rawStartDate) {
         try {
-            const d = new Date(rawDate);
+            const d = new Date(rawStartDate);
             const yyyy = d.getFullYear();
             const mm = String(d.getMonth() + 1).padStart(2, '0');
             const dd = String(d.getDate()).padStart(2, '0');
-            document.getElementById('ee-date').value = `${yyyy}-${mm}-${dd}`;
+            document.getElementById('ee-start-date').value = `${yyyy}-${mm}-${dd}`;
         } catch(err) {
-            document.getElementById('ee-date').value = '';
+            document.getElementById('ee-start-date').value = '';
         }
     } else {
-        document.getElementById('ee-date').value = '';
+        document.getElementById('ee-start-date').value = '';
+    }
+
+    // End Date formatting (YYYY-MM-DD)
+    const rawEndDate = event.end_date;
+    if (rawEndDate) {
+        try {
+            const d = new Date(rawEndDate);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            document.getElementById('ee-end-date').value = `${yyyy}-${mm}-${dd}`;
+        } catch(err) {
+            document.getElementById('ee-end-date').value = '';
+        }
+    } else {
+        document.getElementById('ee-end-date').value = '';
     }
     
     // Start / End time formatting (HH:MM)
@@ -892,7 +912,8 @@ async function saveEditEvent(e) {
     const eventId = document.getElementById('ee-id').value;
     const title = document.getElementById('ee-title').value.trim();
     const location = document.getElementById('ee-location').value.trim();
-    const eventDate = document.getElementById('ee-date').value;
+    const startDate = document.getElementById('ee-start-date').value;
+    const endDate = document.getElementById('ee-end-date').value;
     const startTime = document.getElementById('ee-start-time').value;
     const endTime = document.getElementById('ee-end-time').value;
     const salary = document.getElementById('ee-salary').value;
@@ -902,7 +923,7 @@ async function saveEditEvent(e) {
     const description = document.getElementById('ee-description').value.trim();
     const imageUrl = document.getElementById('ee-image-url').value.trim();
 
-    if (!title || !location || !eventDate || !volunteerLimit) {
+    if (!title || !location || !startDate || !volunteerLimit) {
         showToast('Please fill in all required fields.', 'var(--amber)');
         return;
     }
@@ -926,7 +947,8 @@ async function saveEditEvent(e) {
             body: JSON.stringify({
                 title,
                 location,
-                event_date: eventDate,
+                start_date: startDate,
+                end_date: endDate || null,
                 start_time: startTime || null,
                 end_time: endTime || null,
                 salary: salary ? Number(salary) : 0,
@@ -1316,7 +1338,7 @@ function renderShellEvents() {
     if (currentShellFilter === 'upcoming') {
         filtered = shellEvents.filter(e => {
             const status = String(e.status || 'upcoming').toLowerCase();
-            const rawDate = e.date || e.event_date;
+            const rawDate = e.start_date || e.date || e.event_date;
             let isPassed = false;
             if (rawDate) {
                 const evDate = new Date(rawDate);
@@ -1328,7 +1350,7 @@ function renderShellEvents() {
     } else if (currentShellFilter === 'active') {
         filtered = shellEvents.filter(e => {
             const status = String(e.status || '').toLowerCase();
-            const rawDate = e.date || e.event_date;
+            const rawDate = e.start_date || e.date || e.event_date;
             let isPassed = false;
             if (rawDate) {
                 const evDate = new Date(rawDate);
@@ -1340,7 +1362,7 @@ function renderShellEvents() {
     } else if (currentShellFilter === 'past') {
         filtered = shellEvents.filter(e => {
             const status = String(e.status || '').toLowerCase();
-            const rawDate = e.date || e.event_date;
+            const rawDate = e.start_date || e.date || e.event_date;
             let isPassed = false;
             if (rawDate) {
                 const evDate = new Date(rawDate);
@@ -1389,14 +1411,26 @@ function resolveDirectImageUrl(url) {
 }
 
 function createShellEventCard(event) {
-    const rawDate = event.date || event.event_date;
-    const formattedDate = rawDate
-        ? new Date(rawDate).toLocaleDateString('en-US', {
+    const rawDate = event.start_date || event.date || event.event_date;
+    const rawEndDate = event.end_date;
+    let formattedDate = 'Date TBD';
+    if (rawDate) {
+        const startFormatted = new Date(rawDate).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
-          })
-        : 'Date TBD';
+        });
+        if (rawEndDate && new Date(rawDate).toDateString() !== new Date(rawEndDate).toDateString()) {
+            const endFormatted = new Date(rawEndDate).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            formattedDate = `${startFormatted} - ${endFormatted}`;
+        } else {
+            formattedDate = startFormatted;
+        }
+    }
 
     const timeRange = [event.start_time, event.end_time]
         .filter(Boolean)
@@ -1454,7 +1488,7 @@ function createShellEventCard(event) {
             <div class="shell-card-body">
                 <div class="shell-event-title" style="margin-bottom: 12px; font-weight: 600; font-size: 17px; line-height: 1.35; color: var(--white);">${event.title || 'Untitled Event'}</div>
                 <div class="shell-card-stats">
-                    <span class="shell-card-pay">Pay: ₹${salary}</span>
+                    <span class="shell-card-pay">Pay: ₹${salary} per day</span>
                     ${isEventCompleted ? '<span class="shell-card-spots completed">Completed</span>' : `<span class="shell-card-spots">Spots Left: ${availableSlots} out of ${targetVolunteers}</span>`}
                 </div>
             </div>
@@ -1469,14 +1503,26 @@ function openEventDetailsModal(eventId) {
         return;
     }
 
-    const rawDate = event.date || event.event_date;
-    const formattedDate = rawDate
-        ? new Date(rawDate).toLocaleDateString('en-US', {
+    const rawDate = event.start_date || event.date || event.event_date;
+    const rawEndDate = event.end_date;
+    let formattedDate = 'Date TBD';
+    if (rawDate) {
+        const startFormatted = new Date(rawDate).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
-          })
-        : 'Date TBD';
+        });
+        if (rawEndDate && new Date(rawDate).toDateString() !== new Date(rawEndDate).toDateString()) {
+            const endFormatted = new Date(rawEndDate).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            formattedDate = `${startFormatted} - ${endFormatted}`;
+        } else {
+            formattedDate = startFormatted;
+        }
+    }
 
     const timeRange = [event.start_time, event.end_time]
         .filter(Boolean)
@@ -1515,7 +1561,7 @@ function openEventDetailsModal(eventId) {
 
     document.getElementById('det-date-time').textContent = `${formattedDate}${timeRange ? ' at ' + timeRange : ''}`;
     document.getElementById('det-location').textContent = event.location || 'Location TBD';
-    document.getElementById('det-salary').textContent = `₹${salary}`;
+    document.getElementById('det-salary').textContent = `₹${salary} per day`;
     
     // Check if event is completed
     const now = new Date();
@@ -1588,7 +1634,7 @@ async function applyForEvent(eventId, eventTitle, btn) {
     // Frontend date & status validation checks
     const targetEvent = shellEvents.find(e => Number(e.id) === Number(eventId));
     if (targetEvent) {
-        const rawDate = targetEvent.date || targetEvent.event_date;
+        const rawDate = targetEvent.start_date || targetEvent.date || targetEvent.event_date;
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         let isPassed = false;
@@ -1843,10 +1889,18 @@ function renderEvents() {
   }
 
   evList.innerHTML = filtered.map(event => {
-    const rawDate = event.date || event.event_date;
-    const formattedDate = rawDate
-        ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : 'Date TBD';
+    const rawDate = event.start_date || event.date || event.event_date;
+    const rawEndDate = event.end_date;
+    let formattedDate = 'Date TBD';
+    if (rawDate) {
+        const startFormatted = new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        if (rawEndDate && new Date(rawDate).toDateString() !== new Date(rawEndDate).toDateString()) {
+            const endFormatted = new Date(rawEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            formattedDate = `${startFormatted} - ${endFormatted}`;
+        } else {
+            formattedDate = startFormatted;
+        }
+    }
     const salary = event.salary != null ? Number(event.salary) : 0;
     const statusClass = AC[event.appStatus] || 'muted';
     const statusLabel = LBL[event.appStatus] || 'Pending';
@@ -1859,7 +1913,7 @@ function renderEvents() {
           <div class="event-meta">
             <span>${formattedDate}</span>
             <span>${event.location || 'Location TBD'}</span>
-            <span>₹${salary}</span>
+            <span>₹${salary} per day</span>
           </div>
         </div>
         <div class="event-right">
@@ -1925,7 +1979,7 @@ function renderEarnings() {
       completedCount++;
 
       // Map to monthly chart
-      const rawDate = event.date || event.event_date;
+      const rawDate = event.start_date || event.date || event.event_date;
       if (rawDate) {
         const dObj = new Date(rawDate);
         const year = String(dObj.getFullYear());
@@ -1935,9 +1989,19 @@ function renderEarnings() {
         }
       }
 
+      let formattedBreakdownDate = 'TBD';
+      if (rawDate) {
+        const startLoc = new Date(rawDate).toLocaleDateString();
+        if (event.end_date && new Date(rawDate).toDateString() !== new Date(event.end_date).toDateString()) {
+            formattedBreakdownDate = `${startLoc} - ${new Date(event.end_date).toLocaleDateString()}`;
+        } else {
+            formattedBreakdownDate = startLoc;
+        }
+      }
+
       earningsBreakdown.push({
         title: event.title,
-        date: rawDate ? new Date(rawDate).toLocaleDateString() : 'TBD',
+        date: formattedBreakdownDate,
         salary
       });
     }

@@ -151,7 +151,7 @@ async function applyForEvent(req, res, supabase) {
             });
         }
 
-        const eventDateRaw = targetEvent.event_date || targetEvent.date;
+        const eventDateRaw = targetEvent.start_date || targetEvent.event_date || targetEvent.date;
         if (eventDateRaw) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);

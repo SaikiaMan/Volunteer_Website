@@ -684,7 +684,7 @@ function renderShellEvents() {
 }
 
 function createShellEventCard(event) {
-    const rawDate = event.date || event.event_date;
+    const rawDate = event.start_date || event.date || event.event_date;
     const volunteerLimit = event.volunteer_limit != null ? Number(event.volunteer_limit) : (event.slots || 0);
     const acceptedCount = event.accepted_count != null ? Number(event.accepted_count) : (event.filledSlots || 0);
     const availableSlots = Math.max(volunteerLimit - acceptedCount, 0);
@@ -707,7 +707,7 @@ function createShellEventCard(event) {
             <div class="shell-card-body">
                 <div class="shell-event-title" style="margin-bottom: 12px; font-weight: 600; font-size: 17px; line-height: 1.35; color: var(--white);">${event.title || 'Untitled Event'}</div>
                 <div class="shell-card-stats">
-                    <span class="shell-card-pay">Pay: ₹${salary}</span>
+                    <span class="shell-card-pay">Pay: ₹${salary} per day</span>
                     ${isEventCompleted ? '<span class="shell-card-spots completed">Completed</span>' : `<span class="shell-card-spots">Spots Left: ${availableSlots} out of ${volunteerLimit}</span>`}
                 </div>
             </div>
@@ -722,14 +722,26 @@ function openEventDetailsModal(eventId) {
         return;
     }
 
-    const rawDate = event.date || event.event_date;
-    const formattedDate = rawDate
-        ? new Date(rawDate).toLocaleDateString('en-US', {
+    const rawDate = event.start_date || event.date || event.event_date;
+    const rawEndDate = event.end_date;
+    let formattedDate = 'Date TBD';
+    if (rawDate) {
+        const startFormatted = new Date(rawDate).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
-          })
-        : 'Date TBD';
+        });
+        if (rawEndDate && new Date(rawDate).toDateString() !== new Date(rawEndDate).toDateString()) {
+            const endFormatted = new Date(rawEndDate).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            formattedDate = `${startFormatted} - ${endFormatted}`;
+        } else {
+            formattedDate = startFormatted;
+        }
+    }
 
     const timeRange = [event.start_time, event.end_time]
         .filter(Boolean)
@@ -768,7 +780,7 @@ function openEventDetailsModal(eventId) {
 
     document.getElementById('det-date-time').textContent = `${formattedDate}${timeRange ? ' at ' + timeRange : ''}`;
     document.getElementById('det-location').textContent = event.location || 'Location TBD';
-    document.getElementById('det-salary').textContent = `₹${salary}`;
+    document.getElementById('det-salary').textContent = `₹${salary} per day`;
     
     // Check if event is completed
     const now = new Date();
@@ -829,7 +841,7 @@ async function applyForEvent(eventId, eventTitle, btn) {
     // Frontend date & status validation checks
     const targetEvent = shellEvents.find(e => Number(e.id) === Number(eventId));
     if (targetEvent) {
-        const rawDate = targetEvent.date || targetEvent.event_date;
+        const rawDate = targetEvent.start_date || targetEvent.date || targetEvent.event_date;
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         const isPassed = rawDate ? new Date(rawDate) < now : false;

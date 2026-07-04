@@ -71,8 +71,10 @@ function normalizeEvent(event) {
         title: event.title || 'Untitled Event',
         description: event.description || '',
         location: event.location || 'Location TBD',
-        date: event.event_date || event.date || null,
-        event_date: event.event_date || event.date || null,
+        date: event.start_date || event.event_date || event.date || null,
+        event_date: event.start_date || event.event_date || event.date || null,
+        start_date: event.start_date || null,
+        end_date: event.end_date || null,
         start_time: event.start_time || null,
         end_time: event.end_time || null,
         salary: event.salary != null ? Number(event.salary) : 0,
@@ -159,6 +161,8 @@ async function createEvent(req, res, supabase) {
             location,
             event_date,
             date,
+            start_date,
+            end_date,
             start_time,
             end_time,
             salary,
@@ -177,10 +181,10 @@ async function createEvent(req, res, supabase) {
         } = req.body;
 
         // Validation
-        if (!title || !location || !(event_date || date)) {
+        if (!title || !location || !(start_date || event_date || date)) {
             return res.status(400).json({
                 success: false,
-                error: 'Title, location, and event_date are required'
+                error: 'Title, location, and start_date are required'
             });
         }
 
@@ -202,7 +206,8 @@ async function createEvent(req, res, supabase) {
             title,
             description: description || '',
             location,
-            event_date: event_date || date,
+            start_date: start_date || event_date || date,
+            end_date: end_date || null,
             start_time: start_time || null,
             end_time: end_time || null,
             salary: salary != null ? Number(salary) : 0,
@@ -363,6 +368,8 @@ async function updateEvent(req, res, supabase) {
             location,
             event_date,
             date,
+            start_date,
+            end_date,
             start_time,
             end_time,
             salary,
@@ -377,10 +384,10 @@ async function updateEvent(req, res, supabase) {
             created_by
         } = req.body;
 
-        if (!title || !location || !(event_date || date)) {
+        if (!title || !location || !(start_date || event_date || date)) {
             return res.status(400).json({
                 success: false,
-                error: 'Title, location, and event_date are required'
+                error: 'Title, location, and start_date are required'
             });
         }
 
@@ -398,7 +405,8 @@ async function updateEvent(req, res, supabase) {
             title,
             description: description || '',
             location,
-            event_date: event_date || date,
+            start_date: start_date || event_date || date,
+            end_date: end_date || null,
             start_time: start_time || null,
             end_time: end_time || null,
             salary: salary != null ? Number(salary) : 0,
