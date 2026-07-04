@@ -429,6 +429,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 formDataToSend.set('experience', document.getElementById('experience').value);
                 formDataToSend.set('description', document.getElementById('description').value);
                 
+                const photoInput = document.getElementById('photoUpload');
+                if (photoInput && photoInput.files && photoInput.files.length > 0) {
+                    formDataToSend.set('photoUpload', photoInput.files[0]);
+                }
+                
                 // Send to backend API
                 const response = await fetch(`${API_BASE_URL}/volunteers/signup`, {
                     method: 'POST',
