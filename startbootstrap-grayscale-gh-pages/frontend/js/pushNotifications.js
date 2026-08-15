@@ -1,7 +1,8 @@
 let pushServiceWorkerRegistration = null;
 
-const API_BASE_URL = 'http://localhost:3001/api';
-
+const API_BASE_URL =
+    document.documentElement.dataset.apiBaseUrl ||
+    'http://localhost:3001/api';
 async function registerPushServiceWorker() {
     if (!('serviceWorker' in navigator)) {
         console.error('Service workers are not supported by this browser.');
