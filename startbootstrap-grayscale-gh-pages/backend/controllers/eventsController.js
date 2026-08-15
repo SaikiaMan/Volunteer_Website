@@ -1,3 +1,4 @@
+const webpush = require('../services/pushService');
 async function isHeadUser(supabase, identifier) {
     if (!identifier) return false;
 
@@ -254,12 +255,65 @@ async function createEvent(req, res, supabase) {
         }
 
         console.log('EVENT CREATED SUCCESSFULLY');
-        console.log(JSON.stringify(data, null, 2));
+console.log(JSON.stringify(data, null, 2));
 
-        res.status(201).json({
-            success: true,
-            data: normalizeEvent(data[0])
+try {
+    const { data: subscriptions, error: subscriptionError } = await supabase
+        .from('push_subscriptions')
+        .select('user_id, endpoint, p256dh, auth');
+
+    if (subscriptionError) {
+        console.error('PUSH SUBSCRIPTION FETCH ERROR:', subscriptionError);
+    } else if (Array.isArray(subscriptions) && subscriptions.length > 0) {
+        const notificationPayload = JSON.stringify({
+            title: 'New Event Available',
+            body: `${data[0].title} has been created`,
+            icon: '/icon-192.png',
+            data: {
+                eventId: data[0].id
+            }
         });
+
+        const results = await Promise.allSettled(
+            subscriptions.map(subscription => {
+                const pushSubscription = {
+                    endpoint: subscription.endpoint,
+                    keys: {
+                        p256dh: subscription.p256dh,
+                        auth: subscription.auth
+                    }
+                };
+
+                return webpush.sendNotification(
+                    pushSubscription,
+                    notificationPayload
+                );
+            })
+        );
+
+        results.forEach((result, index) => {
+            if (result.status === 'fulfilled') {
+                console.log(
+                    `Push notification sent successfully to subscription ${index + 1}`
+                );
+            } else {
+                console.error(
+                    `Push notification failed for subscription ${index + 1}:`,
+                    result.reason
+                );
+            }
+        });
+    } else {
+        console.log('No push subscriptions found');
+    }
+} catch (pushError) {
+    console.error('PUSH NOTIFICATION ERROR:', pushError);
+}
+
+res.status(201).json({
+    success: true,
+    data: normalizeEvent(data[0])
+});
 
     } catch (err) {
         console.error('CREATE EVENT EXCEPTION:');

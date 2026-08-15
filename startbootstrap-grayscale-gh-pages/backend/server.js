@@ -3,6 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+require("./services/pushService");
 
 const { createClient } = require('@supabase/supabase-js');
 const createApiRouter = require('./routes');

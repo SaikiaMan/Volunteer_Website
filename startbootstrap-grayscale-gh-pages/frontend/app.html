@@ -530,6 +530,14 @@ body, body *, button, input, select, textarea {
       <button class="app-shell-tab" data-shell-tab="chat" onclick="switchShellTab('chat', this)">Chat</button>
     </div>
     <div class="topbar-right">
+      <button
+    id="enableNotifications"
+    class="topbar-btn"
+    type="button"
+    onclick="enableEventEaseNotifications()"
+>
+    🔔 Enable Notifications
+</button>
       <div class="topbar-main">
         <button id="signupTopBtn" class="topbar-btn primary" type="button" onclick="window.location.href='index.html?auth=signup'">Sign Up</button>
         <button id="loginTopBtn" class="topbar-btn" type="button" onclick="window.location.href='index.html?auth=login'">Login</button>
@@ -580,9 +588,11 @@ body, body *, button, input, select, textarea {
     <nav class="sidebar-nav">      <span class="nav-group-label">Dashboard</span>      <button class="nav-item active" data-tab="overview" onclick="switchTab('overview',this)">        <span class="nav-dot"></span> Overview      </button>      <button class="nav-item" data-tab="events" onclick="switchTab('events',this)">        <span class="nav-dot"></span> My Events        <span class="nav-badge" id="nb-events">0</span>      </button>      <button class="nav-item" data-tab="earnings" onclick="switchTab('earnings',this)">        <span class="nav-dot"></span> Earnings      </button>      <span class="nav-group-label">Account</span>      <button class="nav-item" data-tab="edit" onclick="switchTab('edit',this)">        <span class="nav-dot"></span> Edit Profile      </button>      <button class="nav-item">        <span class="nav-dot"></span> Notifications        <span class="nav-badge amber">0</span>      </button>      <button class="nav-item">        <span class="nav-dot"></span> Settings      </button>    </nav>
     <div class="sidebar-footer">      <button class="sidebar-footer-btn" onclick="logout()">Sign out</button>    </div>  </aside>
   <div class="main">
-    <header class="topbar">      <div class="topbar-left">        <button class="mob-toggle" onclick="openSidebar()">Menu</button>        <div class="breadcrumb"><span>EventEase</span> <span>/</span> <span id="breadcrumb-label">Overview</span></div>      </div>      <div class="topbar-right">
-        <button class="topbar-btn primary" onclick="switchTab('edit',null)">Edit Profile</button>
-      </div>    </header>
+    <header class="topbar">      <div class="topbar-left">        <button class="mob-toggle" onclick="openSidebar()">Menu</button>        <div class="breadcrumb"><span>EventEase</span> <span>/</span> <span id="breadcrumb-label">Overview</span></div>      </div>     <div class="topbar-right">
+    <button class="topbar-btn primary" onclick="switchTab('edit',null)">
+        Edit Profile
+    </button>
+</div>    </header>
     <div class="content">
       <div class="tabs" role="tablist">        <button class="tab active" data-tab="overview" onclick="switchTab('overview',this)" role="tab">Overview</button>        <button class="tab" data-tab="events" onclick="switchTab('events',this)" role="tab">My Events <span class="tab-count" id="tc-events">0</span></button>        <button class="tab" data-tab="earnings" onclick="switchTab('earnings',this)" role="tab">Earnings</button>        <button class="tab" data-tab="edit" onclick="switchTab('edit',this)" role="tab">Edit Profile</button>      </div>
       <div id="panel-overview" class="panel active">
@@ -750,7 +760,7 @@ function normalizeApiBaseUrl(value) {
     return `https://${trimmedValue.replace(/^\/+/, '').replace(/\/$/, '')}`;
 }
 
-const API_BASE_URL = normalizeApiBaseUrl(
+const APP_API_BASE_URL = normalizeApiBaseUrl(
     window.API_BASE_URL ||
     document.documentElement.dataset.apiBaseUrl ||
     ''
@@ -867,7 +877,7 @@ function openEditEventModal(eventId, e) {
                 const formData = new FormData();
                 formData.append('imageFile', file);
 
-                const response = await fetch(`${API_BASE_URL}/events/upload-image`, {
+                const response = await fetch(`${APP_API_BASE_URL}/events/upload-image`, {
                     method: 'POST',
                     body: formData
                 });
@@ -941,7 +951,7 @@ async function saveEditEvent(e) {
             submitBtn.textContent = 'Saving...';
         }
 
-        const response = await fetch(`${API_BASE_URL}/events/update/${eventId}`, {
+        const response = await fetch(`${APP_API_BASE_URL}/events/update/${eventId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1011,7 +1021,7 @@ async function confirmDeleteEvent(eventId, e) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/events/delete/${eventId}?created_by_email=${encodeURIComponent(headEmail)}`, {
+        const response = await fetch(`${APP_API_BASE_URL}/events/delete/${eventId}?created_by_email=${encodeURIComponent(headEmail)}`, {
             method: 'DELETE'
         });
 
@@ -1252,7 +1262,7 @@ async function loadUserApplications() {
 
     try {
         console.log('[DEBUG] loadUserApplications - Requesting applications. email:', email, 'volId:', volId);
-        const response = await fetch(`${API_BASE_URL}/volunteers/applications?email=${encodeURIComponent(email)}&volunteer_id=${encodeURIComponent(volId)}`, {
+        const response = await fetch(`${APP_API_BASE_URL}/volunteers/applications?email=${encodeURIComponent(email)}&volunteer_id=${encodeURIComponent(volId)}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -1298,7 +1308,7 @@ async function loadEvents() {
         } catch (uAppErr) {
             console.warn('loadUserApplications failed, continuing to load events:', uAppErr);
         }
-        const response = await fetch(`${API_BASE_URL}/events/list`);
+        const response = await fetch(`${APP_API_BASE_URL}/events/list`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -1677,7 +1687,7 @@ async function applyForEvent(eventId, eventTitle, btn) {
             btn.textContent = 'Applying...';
         }
 
-        const response = await fetch(`${API_BASE_URL}/applications/apply`, {
+        const response = await fetch(`${APP_API_BASE_URL}/applications/apply`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -2100,7 +2110,7 @@ function renderEarnings() {
       form.append('Events completed', completedCount);
       form.append('Hours logged', totalHours);
 
-      fetch(`${API_BASE_URL}/volunteers/update`, {
+      fetch(`${APP_API_BASE_URL}/volunteers/update`, {
           method: 'PUT',
           body: form
       })
@@ -2241,7 +2251,7 @@ window.saveProfile = async function() {
       form.append('photoUrl', VOL.photo_url);
     }
 
-    const resp = await fetch(`${API_BASE_URL}/volunteers/update`, { method: 'PUT', body: form });
+    const resp = await fetch(`${APP_API_BASE_URL}/volunteers/update`, { method: 'PUT', body: form });
     let result = await resp.json();
     if (!resp.ok) {
         throw new Error(result.error || 'Server update failed');
@@ -2347,6 +2357,95 @@ window.addEventListener('load', applyAppShellMobileLayout);
 let __appShellMobileLayoutTimeout = null;
 window.addEventListener('resize', function() { clearTimeout(__appShellMobileLayoutTimeout); __appShellMobileLayoutTimeout = setTimeout(applyAppShellMobileLayout, 120); });
 </script>
+<script src="js/pushNotifications.js"></script>
+
+<script>
+    async function enableEventEaseNotifications() {
+        const button = document.getElementById('enableNotifications');
+
+        if (!button) return;
+
+        button.disabled = true;
+        button.textContent = 'Enabling...';
+
+        try {
+            const success = await window.enablePushNotifications();
+
+            if (success) {
+                button.textContent = '✓ Notifications Enabled';
+                button.classList.add('primary');
+
+                alert('EventEase notifications enabled!');
+            } else {
+                button.textContent = '🔔 Enable Notifications';
+            }
+        } catch (error) {
+            console.error('Notification setup failed:', error);
+            button.textContent = '🔔 Enable Notifications';
+        } finally {
+            button.disabled = false;
+        }
+    }
+</script>
+
+<script>
+    function openEventFromNotification(eventId) {
+        if (!eventId) return;
+
+        console.log('[Notification] Opening event:', eventId);
+
+        switchShellTab(
+            'events',
+            document.querySelector('[data-shell-tab="events"]')
+        );
+
+        const tryOpenEvent = () => {
+            if (!Array.isArray(shellEvents) || shellEvents.length === 0) {
+                return false;
+            }
+
+            const eventExists = shellEvents.some(
+                event => String(event.id) === String(eventId)
+            );
+
+            if (!eventExists) {
+                return false;
+            }
+
+            openEventDetailsModal(eventId);
+            return true;
+        };
+
+        if (tryOpenEvent()) {
+            return;
+        }
+
+        const checkEvents = setInterval(() => {
+            if (tryOpenEvent()) {
+                clearInterval(checkEvents);
+            }
+        }, 100);
+
+        setTimeout(() => {
+            clearInterval(checkEvents);
+        }, 10000);
+    }
+
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type !== 'OPEN_EVENT') return;
+
+        openEventFromNotification(event.data.eventId);
+    });
+
+    window.addEventListener('load', () => {
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get('eventId');
+
+        if (eventId) {
+            openEventFromNotification(eventId);
+        }
+    });
+</script>
+
 </body>
 </html>
-
