@@ -57,6 +57,19 @@ body {
   cursor: default;
   min-height: 100vh;
 }
+#head-dashboard-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #080808;
+  opacity: 1;
+  pointer-events: none;
+  animation: head-dashboard-reveal .9s ease forwards;
+}
+@keyframes head-dashboard-reveal {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
 
 /* ── CURSOR ── */
 body { cursor: default; }
@@ -640,8 +653,10 @@ body, body *, button, input, select, textarea {
   box-shadow: 0 0 12px rgba(29, 255, 143, 0.4);
 }
 </style>
+<link rel="stylesheet" href="css/page-transition.css">
 </head>
-<body>
+<body class="page-transition-enter head-dashboard-enter">
+<div id="head-dashboard-transition" aria-hidden="true"></div>
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
@@ -2487,6 +2502,7 @@ function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   if (!ok) return;
   await init();
 })();
-</script>
+ </script>
+<script src="js/page-transition.js"></script>
 </body>
 </html>

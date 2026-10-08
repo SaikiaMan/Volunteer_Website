@@ -35,6 +35,14 @@ function setStoredRole(role) {
     localStorage.setItem('eventeaseRole', role || 'volunteer');
 }
 
+function redirectToApp() {
+    if (typeof window.navigateWithTransition === 'function') {
+        window.navigateWithTransition('app.html');
+        return;
+    }
+    window.location.href = 'app.html';
+}
+
 async function trackPageView(page) {
     try {
         await fetch(`${API_BASE_URL}/${page}`);
@@ -76,7 +84,7 @@ function updateSignupButton() {
         loginBtn.textContent = 'View Profile';
         loginBtn.className = 'btn btn-primary btn-lg ms-3';
         loginBtn.onclick = function() {
-            window.location.href = 'app.html';
+            redirectToApp();
         };
     }
 }
@@ -286,7 +294,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     
                     setTimeout(() => {
                         window.location.hash = ''; // Clear hash
-                        window.location.href = 'app.html';
+                        redirectToApp();
                     }, 1000);
                     return; // Stop further execution
                 } else {
@@ -304,7 +312,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Check if user already has a profile. If so, redirect directly to events page (app.html).
     if (localStorage.getItem('volunteerProfile') || localStorage.getItem('eventeaseRole')) {
-        window.location.href = 'app.html';
+        redirectToApp();
         return;
     }
 
@@ -483,7 +491,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 
                 setTimeout(() => {
-                    window.location.href = 'app.html';
+                    redirectToApp();
                 }, 1500);
                 
             } catch (error) {
@@ -570,7 +578,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (response.status === 401 && result.error && result.error.toString().toLowerCase().includes('already')) {
                         // If backend says already signed in, redirect to app
                         setStoredRole('volunteer');
-                        setTimeout(() => { window.location.href = 'app.html'; }, 800);
+                        setTimeout(redirectToApp, 800);
                         return;
                     }
 
@@ -593,9 +601,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         loginSuccessMessage.textContent = 'Head login detected! Redirecting to Dashboard...';
                     }
                     // Redirect to the app page; the app will render the Head dashboard in-place
-                    setTimeout(() => {
-                        window.location.href = 'app.html';
-                    }, 900);
+                    setTimeout(redirectToApp, 900);
                     return;
                 }
 
@@ -606,9 +612,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     loginSuccessMessage.textContent = 'Login successful! Redirecting...';
                 }
 
-                setTimeout(() => {
-                    window.location.href = 'app.html';
-                }, 1500);
+                setTimeout(redirectToApp, 1500);
                 return;
             } catch (error) {
                 console.error('Login error:', error);

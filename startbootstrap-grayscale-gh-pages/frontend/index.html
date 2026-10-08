@@ -66,6 +66,7 @@
         <link href="css/styles.css" rel="stylesheet" />
         <link href="css/index.css" rel="stylesheet" />
         <link href="css/editorial.css" rel="stylesheet" />
+        <link href="css/page-transition.css" rel="stylesheet" />
         <style>
         /* Override global black backgrounds to match warm hero palette */
         body{background:#141012;color:#F7F4EE}
@@ -74,6 +75,7 @@
         </style>
     </head>
     <body id="page-top" style="background:#141012;color:#F7F4EE">
+        <div id="page-transition-overlay" aria-hidden="true"></div>
         <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
             <div class="container px-4 px-lg-5">
                 <a class="navbar-brand" href="#page-top">
@@ -130,7 +132,7 @@
                         </div>
                         <p class="subtext">The Art of Events</p>
                         <p class="hero-message">Verified opportunities. Faster signups. Better experiences.</p>
-                        <a class="hero-cta" href="app.html">Join for Free</a>
+                        <a class="hero-cta" href="app.html" onclick="startDashboardTransition(event, this.href)">Join for Free</a>
 
                         <div class="scroll-indicator" aria-hidden="true">
                             <div class="mouse">
@@ -467,6 +469,17 @@
             document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
 
             // Static stats displayed; remove animated count-up to keep numbers simple
+        </script>
+        <script src="js/page-transition.js"></script>
+        <script>
+            function startDashboardTransition(event, destination) {
+                event.preventDefault();
+                const overlay = document.getElementById('page-transition-overlay');
+                if (overlay) overlay.classList.add('active');
+                window.setTimeout(function () {
+                    window.location.assign(destination);
+                }, 550);
+            }
         </script>
     </body>
 </html>

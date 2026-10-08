@@ -295,6 +295,10 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
   .topbar { padding:0 16px; }
 }
 .app-shell { min-height:100vh; background:linear-gradient(180deg,#0e0e0e 0%,#080808 100%); color:var(--white); }
+.app-shell-bar { animation: dashboard-bar-enter .7s cubic-bezier(.22,1,.36,1) both; }
+.app-shell-events-layout, .shell-wrap, .app > * { animation: dashboard-content-enter .8s .12s cubic-bezier(.22,1,.36,1) both; }
+@keyframes dashboard-bar-enter { from { opacity:0; transform:translateY(-24px); } to { opacity:1; transform:translateY(0); } }
+@keyframes dashboard-content-enter { from { opacity:0; transform:translateY(28px); filter:blur(8px); } to { opacity:1; transform:translateY(0); filter:blur(0); } }
 .app-shell-events .app { display:none; }
 .app-shell-dashboard .app { display:flex; }
 .app-shell-bar { position:sticky; top:0; z-index:80; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 24px; background:rgba(8,8,8,.92); backdrop-filter:blur(18px); border-bottom:1px solid var(--border); }
@@ -412,6 +416,18 @@ body { background:var(--black); color:var(--white); font-family:var(--sans); ove
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
 }
+.shell-filter-transition {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: #080808;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .28s ease;
+}
+.shell-filter-transition.active {
+    opacity: 1;
+}
 
 @media(max-width:900px) {
     .shell-events-layout {
@@ -516,8 +532,9 @@ body, body *, button, input, select, textarea {
   opacity: 0.6;
 }
 </style>
+<link rel="stylesheet" href="css/page-transition.css">
 </head>
-<body class="app-shell-events">
+<body class="app-shell-events page-transition-enter">
 <div class="app-shell">
   <div class="app-shell-bar">
     <a class="app-shell-brand" href="index.html">
@@ -550,6 +567,7 @@ body, body *, button, input, select, textarea {
   </div>
 
   <section class="shell-panel active" id="shell-events">
+    <div class="shell-filter-transition" id="shellFilterTransition" aria-hidden="true"></div>
     <div class="shell-events-layout">
       <aside class="shell-events-sidebar">
         <div class="shell-sidebar-title">Categories</div>
@@ -1052,7 +1070,12 @@ function switchShellTab(tabName, triggerEl) {
   shellPanels.forEach(panel => panel.classList.remove('active'));
   document.querySelectorAll('.app-shell-tab').forEach(button => button.classList.remove('active'));
   const selectedPanel = document.getElementById(`shell-${tabName}`);
-  if (selectedPanel) selectedPanel.classList.add('active');
+  if (selectedPanel) {
+    selectedPanel.classList.add('active');
+    selectedPanel.classList.remove('page-panel-enter');
+    void selectedPanel.offsetWidth;
+    selectedPanel.classList.add('page-panel-enter');
+  }
   if (triggerEl) triggerEl.classList.add('active');
   document.body.classList.remove('app-shell-events', 'app-shell-dashboard', 'app-shell-chat');
   document.body.classList.add(`app-shell-${tabName}`);
@@ -1293,6 +1316,17 @@ function filterShellEvents(filterType, element) {
         if (activeLink) activeLink.classList.add('active');
     }
     
+    const transition = document.getElementById('shellFilterTransition');
+    if (transition) {
+        transition.classList.add('active');
+        window.setTimeout(function () {
+            renderShellEvents();
+            window.requestAnimationFrame(function () {
+                transition.classList.remove('active');
+            });
+        }, 280);
+        return;
+    }
     renderShellEvents();
 }
 
@@ -1385,10 +1419,18 @@ function renderShellEvents() {
 
     if (!filtered.length) {
         grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">No events available yet.</div>';
+        restartEventGridAnimation(grid);
         return;
     }
 
     grid.innerHTML = filtered.map(event => createShellEventCard(event)).join('');
+    restartEventGridAnimation(grid);
+}
+
+function restartEventGridAnimation(grid) {
+    grid.classList.remove('event-filter-enter');
+    void grid.offsetWidth;
+    grid.classList.add('event-filter-enter');
 }
 
 function resolveDirectImageUrl(url) {
@@ -2177,7 +2219,7 @@ document.querySelectorAll('button, a, .stat-block, .event-row, .activity-row, .b
       const shellDash = document.getElementById('shell-dashboard');
       if (shellDash) {
         // Load the original head-dashboard page unchanged inside an iframe so it preserves its own scripts and styles
-        shellDash.innerHTML = `<iframe src="head-dashboard.html?t=${Date.now()}" id="headDashboardIframe" style="width:100%;height:calc(100vh - 140px);min-height:600px;border:0;background:transparent;"></iframe>`;
+        shellDash.innerHTML = `<iframe src="head-dashboard.html?t=${Date.now()}" id="headDashboardIframe" class="page-panel-enter" style="width:100%;height:calc(100vh - 140px);min-height:600px;border:0;background:transparent;"></iframe>`;
       }
       
       // Ensure topbar reflects logged-in state
@@ -2358,6 +2400,7 @@ let __appShellMobileLayoutTimeout = null;
 window.addEventListener('resize', function() { clearTimeout(__appShellMobileLayoutTimeout); __appShellMobileLayoutTimeout = setTimeout(applyAppShellMobileLayout, 120); });
 </script>
 <script src="js/pushNotifications.js"></script>
+<script src="js/page-transition.js"></script>
 
 <script>
     async function enableEventEaseNotifications() {
